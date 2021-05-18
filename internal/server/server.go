@@ -39,13 +39,15 @@ const (
 	RPCHTTPReqCall
 )
 
-func readErr(n int, err error) {
-	if err == io.EOF && n != 0 {
+func readErr(n int, err error, required int) bool {
+	if n < required {
 		err = errors.New("truncated")
 	}
-	if err != io.EOF {
+	if err != nil && err != io.EOF {
 		log.Errorf("read: %s", err)
+		return true
 	}
+	return false
 }
 
 func writeErr(n int, err error) {
@@ -55,14 +57,19 @@ func writeErr(n int, err error) {
 }
 
 func handleConn(c net.Conn) {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Errorf("panic recovered: %s", err)
+		}
+	}()
+
 	log.Infof("Client connected (%s)", c.RemoteAddr().Network())
 	defer c.Close()
 
 	header := make([]byte, HeaderLen)
 	for {
 		n, err := c.Read(header)
-		if err != nil {
-			readErr(n, err)
+		if readErr(n, err, HeaderLen) {
 			break
 		}
 
@@ -76,8 +83,7 @@ func handleConn(c net.Conn) {
 
 		buf := make([]byte, length)
 		n, err = c.Read(buf)
-		if err != nil {
-			readErr(n, err)
+		if readErr(n, err, int(length)) {
 			break
 		}
 

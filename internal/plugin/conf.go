@@ -14,6 +14,74 @@
 // limitations under the License.
 package plugin
 
+import (
+	"strconv"
+	"time"
+
+	"github.com/ReneKroon/ttlcache/v2"
+	A6 "github.com/api7/ext-plugin-proto/go/A6"
+	pc "github.com/api7/ext-plugin-proto/go/A6/PrepareConf"
+	flatbuffers "github.com/google/flatbuffers/go"
+)
+
+type ConfEntry struct {
+	Name  string
+	Value interface{}
+}
+type RuleConf []ConfEntry
+
+var (
+	builder *flatbuffers.Builder
+
+	cache        *ttlcache.Cache
+	cacheCounter uint32 = 0
+)
+
+func init() {
+	builder = flatbuffers.NewBuilder(1024)
+}
+
+func InitCache(ttl time.Duration) {
+	cache = ttlcache.NewCache()
+	cache.SetTTL(ttl)
+	cache.SkipTTLExtensionOnHit(false)
+}
+
+func genCacheToken() uint32 {
+	cacheCounter++
+	if cacheCounter == 0 {
+		// overflow, skip 0 which means none
+		cacheCounter++
+	}
+	return cacheCounter
+}
+
 func PrepareConf(buf []byte) []byte {
-	return buf
+	req := pc.GetRootAsReq(buf, 0)
+	entries := make(RuleConf, req.ConfLength())
+
+	te := A6.TextEntry{}
+	for i := 0; i < req.ConfLength(); i++ {
+		if req.Conf(&te, i) {
+			entries[i].Name = string(te.Name())
+			entries[i].Value = te.Value
+		}
+	}
+
+	token := genCacheToken()
+	cache.Set(strconv.FormatInt(int64(token), 10), entries)
+
+	pc.RespStart(builder)
+	pc.RespAddConfToken(builder, token)
+	root := pc.RespEnd(builder)
+	builder.Finish(root)
+	return builder.FinishedBytes()
+}
+
+func GetRuleConf(token uint32) (RuleConf, error) {
+	res, err := cache.Get(strconv.FormatInt(int64(token), 10))
+	if err != nil {
+		return nil, err
+	}
+	return res.(RuleConf), err
 }

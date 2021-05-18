@@ -15,6 +15,7 @@
 package server
 
 import (
+	"bytes"
 	"encoding/binary"
 	"net"
 	"os"
@@ -53,10 +54,13 @@ func TestRun(t *testing.T) {
 		{header},
 		// header without body truncated
 		{append(header, 32)},
+		// header with bad body
+		{append(header, bytes.Repeat([]byte{1, 2}, 16)...)},
 	}
 
 	for _, c := range cases {
 		conn, err := net.DialTimeout("unix", addr, 1*time.Second)
+		defer conn.Close()
 		assert.NotNil(t, conn, err)
 		conn.Write(c.header)
 	}
