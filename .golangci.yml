@@ -1,0 +1,19 @@
+run:
+  skip-files:
+    - ".*_test.go$"
+
+linters:
+  disable-all: true
+  enable:
+    - deadcode
+    - errcheck
+    - goimports
+    - gosimple
+    - ineffassign
+    - misspell
+    - staticcheck
+    - structcheck
+    - unconvert
+    - unused
+    - varcheck
+    - vet

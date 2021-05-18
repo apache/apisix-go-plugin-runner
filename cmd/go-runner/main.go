@@ -14,8 +14,60 @@
 // limitations under the License.
 package main
 
-import "github.com/apache/apisix-go-plugin-runner/internal/server"
+import (
+	"fmt"
+	"os"
+
+	"github.com/spf13/cobra"
+
+	"github.com/apache/apisix-go-plugin-runner/internal/server"
+)
+
+func newVersionCommand() *cobra.Command {
+	var long bool
+	cmd := &cobra.Command{
+		Use:   "version",
+		Short: "version",
+		Run: func(cmd *cobra.Command, _ []string) {
+			if long {
+				fmt.Print(longVersion())
+			} else {
+				fmt.Printf("version %s\n", shortVersion())
+			}
+		},
+	}
+
+	cmd.PersistentFlags().BoolVar(&long, "long", false, "show long mode version information")
+	return cmd
+}
+
+func newRunCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "run",
+		Short: "run",
+		Run: func(cmd *cobra.Command, _ []string) {
+			server.Run()
+		},
+	}
+	return cmd
+}
+
+func NewCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "apisix-go-plugin-runner [command]",
+		Long:    "The Plugin runner to run Go plugins",
+		Version: shortVersion(),
+	}
+
+	cmd.AddCommand(newRunCommand())
+	cmd.AddCommand(newVersionCommand())
+	return cmd
+}
 
 func main() {
-	server.Run()
+	root := NewCommand()
+	if err := root.Execute(); err != nil {
+		fmt.Fprintln(os.Stderr, err.Error())
+		os.Exit(1)
+	}
 }
