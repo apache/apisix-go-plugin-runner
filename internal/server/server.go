@@ -17,6 +17,7 @@ package server
 import (
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"os"
@@ -95,17 +96,19 @@ func handleConn(c net.Conn) {
 		switch ty {
 		case RPCPrepareConf:
 			out, err = plugin.PrepareConf(buf)
+		default:
+			err = fmt.Errorf("unknown type %d", ty)
+		}
+
+		size := len(out)
+		if size > MaxDataSize {
+			err = fmt.Errorf("the max length of data is %d but got %d", MaxDataSize, size)
+			log.Errorf("%s", err)
 		}
 
 		if err != nil {
 			ty = RPCError
 			out = ReportError(err)
-		}
-
-		size := len(out)
-		if size > MaxDataSize {
-			log.Errorf("the max length of data is %d but got %d", MaxDataSize, size)
-			continue
 		}
 
 		binary.BigEndian.PutUint32(header, uint32(size))
