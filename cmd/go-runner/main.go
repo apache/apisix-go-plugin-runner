@@ -16,11 +16,16 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/spf13/cobra"
 
 	"github.com/apache/apisix-go-plugin-runner/internal/server"
+)
+
+var (
+	InfoOut io.Writer = os.Stdout
 )
 
 func newVersionCommand() *cobra.Command {
@@ -30,9 +35,9 @@ func newVersionCommand() *cobra.Command {
 		Short: "version",
 		Run: func(cmd *cobra.Command, _ []string) {
 			if long {
-				fmt.Print(longVersion())
+				fmt.Fprint(InfoOut, longVersion())
 			} else {
-				fmt.Printf("version %s\n", shortVersion())
+				fmt.Fprintf(InfoOut, "version %s\n", shortVersion())
 			}
 		},
 	}
