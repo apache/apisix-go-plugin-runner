@@ -34,11 +34,11 @@ func TestPrepareConf(t *testing.T) {
 	builder.Finish(root)
 	b := builder.FinishedBytes()
 
-	out := PrepareConf(b)
+	out, _ := PrepareConf(b)
 	resp := pc.GetRootAsResp(out, 0)
 	assert.Equal(t, uint32(1), resp.ConfToken())
 
-	out = PrepareConf(b)
+	out, _ = PrepareConf(b)
 	resp = pc.GetRootAsResp(out, 0)
 	assert.Equal(t, uint32(2), resp.ConfToken())
 }
@@ -51,7 +51,7 @@ func TestGetRuleConf(t *testing.T) {
 	builder.Finish(root)
 	b := builder.FinishedBytes()
 
-	out := PrepareConf(b)
+	out, _ := PrepareConf(b)
 	resp := pc.GetRootAsResp(out, 0)
 	assert.Equal(t, uint32(3), resp.ConfToken())
 

@@ -90,7 +90,12 @@ func handleConn(c net.Conn) {
 		var out []byte
 		switch ty {
 		case RPCPrepareConf:
-			out = plugin.PrepareConf(buf)
+			out, err = plugin.PrepareConf(buf)
+		}
+
+		if err != nil {
+			ty = RPCError
+			out = ReportError(err)
 		}
 
 		size := len(out)

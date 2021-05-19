@@ -31,15 +31,11 @@ type ConfEntry struct {
 type RuleConf []ConfEntry
 
 var (
-	builder *flatbuffers.Builder
+	builder = flatbuffers.NewBuilder(1024)
 
 	cache        *ttlcache.Cache
 	cacheCounter uint32 = 0
 )
-
-func init() {
-	builder = flatbuffers.NewBuilder(1024)
-}
 
 func InitCache(ttl time.Duration) {
 	cache = ttlcache.NewCache()
@@ -56,7 +52,9 @@ func genCacheToken() uint32 {
 	return cacheCounter
 }
 
-func PrepareConf(buf []byte) []byte {
+func PrepareConf(buf []byte) ([]byte, error) {
+	builder.Reset()
+
 	req := pc.GetRootAsReq(buf, 0)
 	entries := make(RuleConf, req.ConfLength())
 
@@ -69,13 +67,16 @@ func PrepareConf(buf []byte) []byte {
 	}
 
 	token := genCacheToken()
-	cache.Set(strconv.FormatInt(int64(token), 10), entries)
+	err := cache.Set(strconv.FormatInt(int64(token), 10), entries)
+	if err != nil {
+		return nil, err
+	}
 
 	pc.RespStart(builder)
 	pc.RespAddConfToken(builder, token)
 	root := pc.RespEnd(builder)
 	builder.Finish(root)
-	return builder.FinishedBytes()
+	return builder.FinishedBytes(), nil
 }
 
 func GetRuleConf(token uint32) (RuleConf, error) {
