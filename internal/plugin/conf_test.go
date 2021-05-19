@@ -26,7 +26,7 @@ import (
 )
 
 func TestPrepareConf(t *testing.T) {
-	InitCache(10 * time.Millisecond)
+	InitConfCache(10 * time.Millisecond)
 
 	builder := flatbuffers.NewBuilder(1024)
 	pc.ReqStart(builder)
@@ -44,7 +44,7 @@ func TestPrepareConf(t *testing.T) {
 }
 
 func TestGetRuleConf(t *testing.T) {
-	InitCache(1 * time.Millisecond)
+	InitConfCache(1 * time.Millisecond)
 	builder := flatbuffers.NewBuilder(1024)
 	pc.ReqStart(builder)
 	root := pc.ReqEnd(builder)
@@ -64,7 +64,7 @@ func TestGetRuleConf(t *testing.T) {
 }
 
 func TestGetRuleConfCheckConf(t *testing.T) {
-	InitCache(1 * time.Millisecond)
+	InitConfCache(1 * time.Millisecond)
 	builder := flatbuffers.NewBuilder(1024)
 
 	name := builder.CreateString("echo")

@@ -37,7 +37,7 @@ var (
 	cacheCounter uint32 = 0
 )
 
-func InitCache(ttl time.Duration) {
+func InitConfCache(ttl time.Duration) {
 	cache = ttlcache.NewCache()
 	cache.SetTTL(ttl)
 	cache.SkipTTLExtensionOnHit(false)

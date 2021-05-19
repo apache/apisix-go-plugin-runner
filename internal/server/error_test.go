@@ -25,7 +25,7 @@ import (
 )
 
 func TestReportErrorCacheToken(t *testing.T) {
-	plugin.InitCache(10 * time.Millisecond)
+	plugin.InitConfCache(10 * time.Millisecond)
 
 	_, err := plugin.GetRuleConf(uint32(999999))
 	b := ReportError(err)
