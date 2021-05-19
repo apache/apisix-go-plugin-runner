@@ -36,6 +36,7 @@ func TestGetSockAddr(t *testing.T) {
 func TestRun(t *testing.T) {
 	addr := "/tmp/x.sock"
 	os.Setenv(SockAddrEnv, addr)
+	os.Setenv(ConfCacheTTLEnv, "60")
 
 	go func() {
 		Run()

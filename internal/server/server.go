@@ -21,7 +21,9 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
+	"time"
 
 	"github.com/apache/apisix-go-plugin-runner/internal/log"
 	"github.com/apache/apisix-go-plugin-runner/internal/plugin"
@@ -30,7 +32,9 @@ import (
 const (
 	HeaderLen   = 4
 	MaxDataSize = 2<<24 - 1
-	SockAddrEnv = "APISIX_LISTEN_ADDRESS"
+
+	SockAddrEnv     = "APISIX_LISTEN_ADDRESS"
+	ConfCacheTTLEnv = "APISIX_CONF_EXPIRE_TIME"
 )
 
 const (
@@ -121,6 +125,16 @@ func handleConn(c net.Conn) {
 	}
 }
 
+func getConfCacheTTL() time.Duration {
+	ttl := os.Getenv(ConfCacheTTLEnv)
+	n, err := strconv.Atoi(ttl)
+	if err != nil || n <= 0 {
+		log.Errorf("invalid cache ttl: %s", ttl)
+		return 0
+	}
+	return time.Duration(n) * time.Second
+}
+
 func getSockAddr() string {
 	path := os.Getenv(SockAddrEnv)
 	if path == "" {
@@ -131,6 +145,15 @@ func getSockAddr() string {
 }
 
 func Run() {
+	ttl := getConfCacheTTL()
+	if ttl == 0 {
+		log.Fatalf("A valid conf cache ttl should be set via environment variable %s",
+			ConfCacheTTLEnv)
+	}
+	log.Infof("conf cache ttl is %v", ttl)
+
+	plugin.InitConfCache(ttl)
+
 	sockAddr := getSockAddr()
 	if sockAddr == "" {
 		log.Fatalf("A valid socket address should be set via environment variable %s", SockAddrEnv)
