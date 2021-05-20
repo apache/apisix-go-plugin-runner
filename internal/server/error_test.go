@@ -29,12 +29,14 @@ func TestReportErrorCacheToken(t *testing.T) {
 
 	_, err := plugin.GetRuleConf(uint32(999999))
 	b := ReportError(err)
-	resp := A6Err.GetRootAsResp(b, 0)
+	out := b.FinishedBytes()
+	resp := A6Err.GetRootAsResp(out, 0)
 	assert.Equal(t, A6Err.CodeCONF_TOKEN_NOT_FOUND, resp.Code())
 }
 
 func TestReportErrorUnknownErr(t *testing.T) {
 	b := ReportError(io.EOF)
-	resp := A6Err.GetRootAsResp(b, 0)
+	out := b.FinishedBytes()
+	resp := A6Err.GetRootAsResp(out, 0)
 	assert.Equal(t, A6Err.CodeSERVICE_UNAVAILABLE, resp.Code())
 }

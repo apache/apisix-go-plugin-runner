@@ -12,30 +12,25 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package server
+package util
 
 import (
-	"github.com/ReneKroon/ttlcache/v2"
-	A6Err "github.com/api7/ext-plugin-proto/go/A6/Err"
-	flatbuffers "github.com/google/flatbuffers/go"
+	"sync"
 
-	"github.com/apache/apisix-go-plugin-runner/internal/util"
+	flatbuffers "github.com/google/flatbuffers/go"
 )
 
-func ReportError(err error) *flatbuffers.Builder {
-	builder := util.GetBuilder()
-	A6Err.RespStart(builder)
+var builderPool = sync.Pool{
+	New: func() interface{} {
+		return flatbuffers.NewBuilder(256)
+	},
+}
 
-	var code A6Err.Code
-	switch err {
-	case ttlcache.ErrNotFound:
-		code = A6Err.CodeCONF_TOKEN_NOT_FOUND
-	default:
-		code = A6Err.CodeSERVICE_UNAVAILABLE
-	}
+func GetBuilder() *flatbuffers.Builder {
+	return builderPool.Get().(*flatbuffers.Builder)
+}
 
-	A6Err.RespAddCode(builder, code)
-	resp := A6Err.RespEnd(builder)
-	builder.Finish(resp)
-	return builder
+func PutBuilder(b *flatbuffers.Builder) {
+	b.Reset()
+	builderPool.Put(b)
 }

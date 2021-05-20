@@ -15,6 +15,8 @@
 package plugin
 
 import (
+	"sort"
+	"sync"
 	"testing"
 	"time"
 
@@ -34,13 +36,50 @@ func TestPrepareConf(t *testing.T) {
 	builder.Finish(root)
 	b := builder.FinishedBytes()
 
-	out, _ := PrepareConf(b)
+	bd, _ := PrepareConf(b)
+	out := bd.FinishedBytes()
 	resp := pc.GetRootAsResp(out, 0)
 	assert.Equal(t, uint32(1), resp.ConfToken())
 
-	out, _ = PrepareConf(b)
+	bd, _ = PrepareConf(b)
+	out = bd.FinishedBytes()
 	resp = pc.GetRootAsResp(out, 0)
 	assert.Equal(t, uint32(2), resp.ConfToken())
+}
+
+func TestPrepareConfConcurrently(t *testing.T) {
+	InitConfCache(10 * time.Millisecond)
+
+	builder := flatbuffers.NewBuilder(1024)
+	pc.ReqStart(builder)
+	root := pc.ReqEnd(builder)
+	builder.Finish(root)
+	b := builder.FinishedBytes()
+
+	n := 10
+	var wg sync.WaitGroup
+	res := make([][]byte, n)
+	for i := 0; i < n; i++ {
+		wg.Add(1)
+		go func(i int) {
+			bd, err := PrepareConf(b)
+			assert.Nil(t, err)
+			res[i] = bd.FinishedBytes()[:]
+			wg.Done()
+		}(i)
+	}
+	wg.Wait()
+
+	tokens := make([]int, n)
+	for i := 0; i < n; i++ {
+		resp := pc.GetRootAsResp(res[i], 0)
+		tokens[i] = int(resp.ConfToken())
+	}
+
+	sort.Ints(tokens)
+	for i := 0; i < n; i++ {
+		assert.Equal(t, i+1, tokens[i])
+	}
 }
 
 func TestGetRuleConf(t *testing.T) {
@@ -51,15 +90,16 @@ func TestGetRuleConf(t *testing.T) {
 	builder.Finish(root)
 	b := builder.FinishedBytes()
 
-	out, _ := PrepareConf(b)
+	bd, _ := PrepareConf(b)
+	out := bd.FinishedBytes()
 	resp := pc.GetRootAsResp(out, 0)
-	assert.Equal(t, uint32(3), resp.ConfToken())
+	assert.Equal(t, uint32(1), resp.ConfToken())
 
-	res, _ := GetRuleConf(3)
+	res, _ := GetRuleConf(1)
 	assert.Equal(t, 0, len(res))
 
 	time.Sleep(2 * time.Millisecond)
-	_, err := GetRuleConf(3)
+	_, err := GetRuleConf(1)
 	assert.Equal(t, ttlcache.ErrNotFound, err)
 }
 
@@ -85,7 +125,7 @@ func TestGetRuleConfCheckConf(t *testing.T) {
 	b := builder.FinishedBytes()
 
 	PrepareConf(b)
-	res, _ := GetRuleConf(4)
+	res, _ := GetRuleConf(1)
 	assert.Equal(t, 1, len(res))
 	assert.Equal(t, "echo", res[0].Name)
 }

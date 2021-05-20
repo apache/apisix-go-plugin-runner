@@ -16,9 +16,11 @@ package plugin
 
 import (
 	"strconv"
+	"sync/atomic"
 	"time"
 
 	"github.com/ReneKroon/ttlcache/v2"
+	"github.com/apache/apisix-go-plugin-runner/internal/util"
 	A6 "github.com/api7/ext-plugin-proto/go/A6"
 	pc "github.com/api7/ext-plugin-proto/go/A6/PrepareConf"
 	flatbuffers "github.com/google/flatbuffers/go"
@@ -31,8 +33,6 @@ type ConfEntry struct {
 type RuleConf []ConfEntry
 
 var (
-	builder = flatbuffers.NewBuilder(1024)
-
 	cache        *ttlcache.Cache
 	cacheCounter uint32 = 0
 )
@@ -41,20 +41,14 @@ func InitConfCache(ttl time.Duration) {
 	cache = ttlcache.NewCache()
 	cache.SetTTL(ttl)
 	cache.SkipTTLExtensionOnHit(false)
+	cacheCounter = 0
 }
 
 func genCacheToken() uint32 {
-	cacheCounter++
-	if cacheCounter == 0 {
-		// overflow, skip 0 which means none
-		cacheCounter++
-	}
-	return cacheCounter
+	return atomic.AddUint32(&cacheCounter, 1)
 }
 
-func PrepareConf(buf []byte) ([]byte, error) {
-	builder.Reset()
-
+func PrepareConf(buf []byte) (*flatbuffers.Builder, error) {
 	req := pc.GetRootAsReq(buf, 0)
 	entries := make(RuleConf, req.ConfLength())
 
@@ -72,11 +66,12 @@ func PrepareConf(buf []byte) ([]byte, error) {
 		return nil, err
 	}
 
+	builder := util.GetBuilder()
 	pc.RespStart(builder)
 	pc.RespAddConfToken(builder, token)
 	root := pc.RespEnd(builder)
 	builder.Finish(root)
-	return builder.FinishedBytes(), nil
+	return builder, nil
 }
 
 func GetRuleConf(token uint32) (RuleConf, error) {

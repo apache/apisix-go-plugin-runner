@@ -28,6 +28,8 @@ import (
 
 	"github.com/apache/apisix-go-plugin-runner/internal/log"
 	"github.com/apache/apisix-go-plugin-runner/internal/plugin"
+	"github.com/apache/apisix-go-plugin-runner/internal/util"
+	flatbuffers "github.com/google/flatbuffers/go"
 )
 
 const (
@@ -92,14 +94,15 @@ func handleConn(c net.Conn) {
 			break
 		}
 
-		var out []byte
+		var bd *flatbuffers.Builder
 		switch ty {
 		case RPCPrepareConf:
-			out, err = plugin.PrepareConf(buf)
+			bd, err = plugin.PrepareConf(buf)
 		default:
 			err = fmt.Errorf("unknown type %d", ty)
 		}
 
+		out := bd.FinishedBytes()
 		size := len(out)
 		if size > MaxDataSize {
 			err = fmt.Errorf("the max length of data is %d but got %d", MaxDataSize, size)
@@ -108,7 +111,9 @@ func handleConn(c net.Conn) {
 
 		if err != nil {
 			ty = RPCError
-			out = ReportError(err)
+			util.PutBuilder(bd)
+			bd = ReportError(err)
+			out = bd.FinishedBytes()
 		}
 
 		binary.BigEndian.PutUint32(header, uint32(size))
@@ -117,14 +122,17 @@ func handleConn(c net.Conn) {
 		n, err = c.Write(header)
 		if err != nil {
 			writeErr(n, err)
+			util.PutBuilder(bd)
 			break
 		}
 
 		n, err = c.Write(out)
 		if err != nil {
 			writeErr(n, err)
+			util.PutBuilder(bd)
 			break
 		}
+		util.PutBuilder(bd)
 	}
 }
 
