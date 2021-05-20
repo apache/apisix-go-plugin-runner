@@ -23,9 +23,11 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
+	"github.com/apache/apisix-go-plugin-runner/internal/http"
 	"github.com/apache/apisix-go-plugin-runner/internal/log"
 	"github.com/apache/apisix-go-plugin-runner/internal/plugin"
 	"github.com/apache/apisix-go-plugin-runner/internal/util"
@@ -98,6 +100,8 @@ func handleConn(c net.Conn) {
 		switch ty {
 		case RPCPrepareConf:
 			bd, err = plugin.PrepareConf(buf)
+		case RPCHTTPReqCall:
+			bd, err = http.HTTPReqCall(buf)
 		default:
 			err = fmt.Errorf("unknown type %d", ty)
 		}
@@ -148,11 +152,11 @@ func getConfCacheTTL() time.Duration {
 
 func getSockAddr() string {
 	path := os.Getenv(SockAddrEnv)
-	if path == "" {
+	if !strings.HasPrefix(path, "unix:") {
 		log.Errorf("invalid socket address: %s", path)
 		return ""
 	}
-	return path
+	return path[len("unix:"):]
 }
 
 func Run() {

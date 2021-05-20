@@ -29,12 +29,12 @@ func TestGetSockAddr(t *testing.T) {
 	os.Unsetenv(SockAddrEnv)
 	assert.Equal(t, "", getSockAddr())
 
-	os.Setenv(SockAddrEnv, "/tmp/x.sock")
+	os.Setenv(SockAddrEnv, "unix:/tmp/x.sock")
 	assert.Equal(t, "/tmp/x.sock", getSockAddr())
 }
 
 func TestRun(t *testing.T) {
-	addr := "/tmp/x.sock"
+	addr := "unix:/tmp/x.sock"
 	os.Setenv(SockAddrEnv, addr)
 	os.Setenv(ConfCacheTTLEnv, "60")
 
@@ -60,9 +60,9 @@ func TestRun(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		conn, err := net.DialTimeout("unix", addr, 1*time.Second)
-		defer conn.Close()
+		conn, err := net.DialTimeout("unix", addr[len("unix:"):], 1*time.Second)
 		assert.NotNil(t, conn, err)
+		defer conn.Close()
 		conn.Write(c.header)
 	}
 }
