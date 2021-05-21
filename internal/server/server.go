@@ -103,17 +103,18 @@ func handleConn(c net.Conn) {
 		case RPCHTTPReqCall:
 			bd, err = http.HTTPReqCall(buf)
 		default:
-			err = fmt.Errorf("unknown type %d", ty)
+			err = UnknownType{ty}
 		}
 
 		out := bd.FinishedBytes()
 		size := len(out)
 		if size > MaxDataSize {
 			err = fmt.Errorf("the max length of data is %d but got %d", MaxDataSize, size)
-			log.Errorf("%s", err)
 		}
 
 		if err != nil {
+			log.Errorf("%s", err)
+
 			ty = RPCError
 			util.PutBuilder(bd)
 			bd = ReportError(err)

@@ -34,6 +34,13 @@ func TestReportErrorCacheToken(t *testing.T) {
 	assert.Equal(t, A6Err.CodeCONF_TOKEN_NOT_FOUND, resp.Code())
 }
 
+func TestReportErrorUnknownType(t *testing.T) {
+	b := ReportError(UnknownType{23})
+	out := b.FinishedBytes()
+	resp := A6Err.GetRootAsResp(out, 0)
+	assert.Equal(t, A6Err.CodeBAD_REQUEST, resp.Code())
+}
+
 func TestReportErrorUnknownErr(t *testing.T) {
 	b := ReportError(io.EOF)
 	out := b.FinishedBytes()
