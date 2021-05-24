@@ -81,3 +81,7 @@ func GetRuleConf(token uint32) (RuleConf, error) {
 	}
 	return res.(RuleConf), err
 }
+
+func SetRuleConf(token uint32, conf RuleConf) error {
+	return cache.Set(strconv.FormatInt(int64(token), 10), conf)
+}

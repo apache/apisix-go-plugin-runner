@@ -14,17 +14,24 @@
 // limitations under the License.
 package http
 
-import (
-	flatbuffers "github.com/google/flatbuffers/go"
+import "net/http"
 
-	"github.com/apache/apisix-go-plugin-runner/internal/util"
-	hrc "github.com/api7/ext-plugin-proto/go/A6/HTTPReqCall"
-)
+type Response struct {
+	code int
+}
 
-func HTTPReqCall(buf []byte) (*flatbuffers.Builder, error) {
-	builder := util.GetBuilder()
-	hrc.RespStart(builder)
-	resp := hrc.RespEnd(builder)
-	builder.Finish(resp)
-	return builder, nil
+func (r Response) Header() http.Header {
+	return nil
+}
+
+func (r Response) Write([]byte) (int, error) {
+	return 0, nil
+}
+
+func (r Response) WriteHeader(statusCode int) {
+	r.code = statusCode
+}
+
+func CreateResponse() *Response {
+	return &Response{}
 }

@@ -27,7 +27,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/apache/apisix-go-plugin-runner/internal/http"
 	"github.com/apache/apisix-go-plugin-runner/internal/log"
 	"github.com/apache/apisix-go-plugin-runner/internal/plugin"
 	"github.com/apache/apisix-go-plugin-runner/internal/util"
@@ -101,7 +100,7 @@ func handleConn(c net.Conn) {
 		case RPCPrepareConf:
 			bd, err = plugin.PrepareConf(buf)
 		case RPCHTTPReqCall:
-			bd, err = http.HTTPReqCall(buf)
+			bd, err = plugin.HTTPReqCall(buf)
 		default:
 			err = UnknownType{ty}
 		}
