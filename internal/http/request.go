@@ -27,6 +27,10 @@ func (r Request) ConfToken() uint32 {
 	return r.r.ConfToken()
 }
 
+func (r Request) Id() uint32 {
+	return r.r.Id()
+}
+
 func CreateRequest(buf []byte) *Request {
 	req := &Request{
 		r: hrc.GetRootAsReq(buf, 0),

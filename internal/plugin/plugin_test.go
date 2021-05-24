@@ -29,6 +29,7 @@ func TestHTTPReqCall(t *testing.T) {
 
 	builder := flatbuffers.NewBuilder(1024)
 	hrc.ReqStart(builder)
+	hrc.ReqAddId(builder, 233)
 	hrc.ReqAddConfToken(builder, 1)
 	r := hrc.ReqEnd(builder)
 	builder.Finish(r)
@@ -39,5 +40,6 @@ func TestHTTPReqCall(t *testing.T) {
 
 	out = b.FinishedBytes()
 	resp := hrc.GetRootAsResp(out, 0)
+	assert.Equal(t, uint32(233), resp.Id())
 	assert.Equal(t, hrc.ActionNONE, resp.ActionType())
 }

@@ -29,9 +29,15 @@ func handle(conf RuleConf, w http.ResponseWriter, r pkgHTTP.Request) error {
 	return nil
 }
 
-func reportAction(req *inHTTP.Request, resp *inHTTP.Response) *flatbuffers.Builder {
+func reportAction(id uint32, req *inHTTP.Request, resp *inHTTP.Response) *flatbuffers.Builder {
 	builder := util.GetBuilder()
+
+	if resp != nil && resp.FetchChanges(id, builder) {
+		return builder
+	}
+
 	hrc.RespStart(builder)
+	hrc.RespAddId(builder, id)
 	res := hrc.RespEnd(builder)
 	builder.Finish(res)
 	return builder
@@ -51,6 +57,7 @@ func HTTPReqCall(buf []byte) (*flatbuffers.Builder, error) {
 		return nil, err
 	}
 
-	builder := reportAction(req, resp)
+	id := req.Id()
+	builder := reportAction(id, req, resp)
 	return builder, nil
 }

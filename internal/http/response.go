@@ -14,22 +14,102 @@
 // limitations under the License.
 package http
 
-import "net/http"
+import (
+	"bytes"
+	"net/http"
+
+	"github.com/api7/ext-plugin-proto/go/A6"
+	hrc "github.com/api7/ext-plugin-proto/go/A6/HTTPReqCall"
+	flatbuffers "github.com/google/flatbuffers/go"
+)
 
 type Response struct {
+	hdr  http.Header
+	body *bytes.Buffer
 	code int
 }
 
-func (r Response) Header() http.Header {
-	return nil
+func (r *Response) Header() http.Header {
+	r.hdr = http.Header{}
+	return r.hdr
 }
 
-func (r Response) Write([]byte) (int, error) {
-	return 0, nil
+func (r *Response) Write(b []byte) (int, error) {
+	if r.body == nil {
+		r.body = &bytes.Buffer{}
+	}
+
+	return r.body.Write(b)
 }
 
-func (r Response) WriteHeader(statusCode int) {
+func (r *Response) WriteHeader(statusCode int) {
+	if r.code != 0 {
+		// official WriteHeader can't override written status
+		// keep the same behavior
+		return
+	}
 	r.code = statusCode
+}
+
+func (r *Response) FetchChanges(id uint32, builder *flatbuffers.Builder) bool {
+	if r.body == nil && r.code == 0 && len(r.hdr) == 0 {
+		return false
+	}
+
+	hdrLen := len(r.hdr)
+	var hdrVec flatbuffers.UOffsetT
+	if hdrLen > 0 {
+		hdrs := []flatbuffers.UOffsetT{}
+		for n, arr := range r.hdr {
+			for _, v := range arr {
+				name := builder.CreateString(n)
+				value := builder.CreateString(v)
+				A6.TextEntryStart(builder)
+				A6.TextEntryAddName(builder, name)
+				A6.TextEntryAddValue(builder, value)
+				te := A6.TextEntryEnd(builder)
+				hdrs = append(hdrs, te)
+			}
+		}
+		size := len(hdrs)
+		hrc.StopStartHeadersVector(builder, size)
+		for i := size - 1; i >= 0; i-- {
+			te := hdrs[i]
+			builder.PrependUOffsetT(te)
+		}
+		hdrVec = builder.EndVector(size)
+	}
+
+	var bodyVec flatbuffers.UOffsetT
+	if r.body != nil {
+		b := r.body.Bytes()
+		if len(b) > 0 {
+			bodyVec = builder.CreateByteVector(b)
+		}
+	}
+
+	hrc.StopStart(builder)
+	if r.code == 0 {
+		hrc.StopAddStatus(builder, 200)
+	} else {
+		hrc.StopAddStatus(builder, uint16(r.code))
+	}
+	if hdrLen > 0 {
+		hrc.StopAddHeaders(builder, hdrVec)
+	}
+	if r.body != nil {
+		hrc.StopAddBody(builder, bodyVec)
+	}
+	stop := hrc.StopEnd(builder)
+
+	hrc.RespStart(builder)
+	hrc.RespAddId(builder, id)
+	hrc.RespAddActionType(builder, hrc.ActionStop)
+	hrc.RespAddAction(builder, stop)
+	res := hrc.RespEnd(builder)
+	builder.Finish(res)
+
+	return true
 }
 
 func CreateResponse() *Response {

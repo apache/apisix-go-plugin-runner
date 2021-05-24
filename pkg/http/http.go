@@ -24,4 +24,6 @@ package http
 // So the server must parse all the headers, ...". The official API is suboptimal, which
 // is even worse in our case as it is not a real HTTP server.
 type Request interface {
+	// Id returns the request id
+	Id() uint32
 }
