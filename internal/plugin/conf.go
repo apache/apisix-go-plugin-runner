@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/ReneKroon/ttlcache/v2"
+	"github.com/apache/apisix-go-plugin-runner/internal/log"
 	"github.com/apache/apisix-go-plugin-runner/internal/util"
 	A6 "github.com/api7/ext-plugin-proto/go/A6"
 	pc "github.com/api7/ext-plugin-proto/go/A6/PrepareConf"
@@ -39,7 +40,10 @@ var (
 
 func InitConfCache(ttl time.Duration) {
 	cache = ttlcache.NewCache()
-	cache.SetTTL(ttl)
+	err := cache.SetTTL(ttl)
+	if err != nil {
+		log.Fatalf("failed to set global ttl for cache: %s", err)
+	}
 	cache.SkipTTLExtensionOnHit(false)
 	cacheCounter = 0
 }
