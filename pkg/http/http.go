@@ -14,6 +14,8 @@
 // limitations under the License.
 package http
 
+import "net"
+
 // Request represents the HTTP request received by APISIX.
 // We don't use net/http's Request because it doesn't suit our purpose.
 // Take `Request.Header` as an example:
@@ -24,6 +26,16 @@ package http
 // So the server must parse all the headers, ...". The official API is suboptimal, which
 // is even worse in our case as it is not a real HTTP server.
 type Request interface {
-	// Id returns the request id
-	Id() uint32
+	// ID returns the request id
+	ID() uint32
+	// SrcIP returns the client's IP
+	SrcIP() net.IP
+	// Method returns the HTTP method (GET, POST, PUT, etc.)
+	Method() string
+	// Path returns the path part of the client's URI (without query string and the other parts)
+	// It won't be equal to the one in the Request-Line sent by the client if it has
+	// been rewritten by APISIX
+	Path() []byte
+	// SetPath is the setter for Path
+	SetPath([]byte)
 }

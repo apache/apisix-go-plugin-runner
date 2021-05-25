@@ -57,7 +57,7 @@ func HTTPReqCall(buf []byte) (*flatbuffers.Builder, error) {
 		return nil, err
 	}
 
-	id := req.Id()
+	id := req.ID()
 	builder := reportAction(id, req, resp)
 	return builder, nil
 }
