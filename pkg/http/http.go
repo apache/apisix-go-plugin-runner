@@ -14,7 +14,10 @@
 // limitations under the License.
 package http
 
-import "net"
+import (
+	"net"
+	"net/http"
+)
 
 // Request represents the HTTP request received by APISIX.
 // We don't use net/http's Request because it doesn't suit our purpose.
@@ -38,4 +41,25 @@ type Request interface {
 	Path() []byte
 	// SetPath is the setter for Path
 	SetPath([]byte)
+	// Header returns the HTTP headers
+	Header() Header
+}
+
+// Header is like http.Header, but only implements the subset of its methods
+type Header interface {
+	// Set sets the header entries associated with key to the single element value.
+	// It replaces any existing values associated with key.
+	// The key is case insensitive
+	Set(key, value string)
+	// Del deletes the values associated with key. The key is case insensitive
+	Del(key string)
+	// Get gets the first value associated with the given key.
+	// If there are no values associated with the key, Get returns "".
+	// It is case insensitive
+	Get(key string) string
+	// View returns the internal structure. It is expected for read operations. Any write operation
+	// won't be recorded
+	View() http.Header
+
+	// TODO: support Add
 }

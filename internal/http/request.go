@@ -16,7 +16,10 @@ package http
 
 import (
 	"net"
+	"net/http"
 
+	pkgHTTP "github.com/apache/apisix-go-plugin-runner/pkg/http"
+	"github.com/api7/ext-plugin-proto/go/A6"
 	hrc "github.com/api7/ext-plugin-proto/go/A6/HTTPReqCall"
 	flatbuffers "github.com/google/flatbuffers/go"
 )
@@ -26,6 +29,9 @@ type Request struct {
 	r *hrc.Req
 
 	path []byte
+
+	hdr    *Header
+	rawHdr http.Header
 }
 
 func (r *Request) ConfToken() uint32 {
@@ -55,8 +61,25 @@ func (r *Request) SetPath(path []byte) {
 	r.path = path
 }
 
+func (r *Request) Header() pkgHTTP.Header {
+	if r.hdr == nil {
+		hdr := newHeader()
+		hh := hdr.View()
+		size := r.r.HeadersLength()
+		obj := A6.TextEntry{}
+		for i := 0; i < size; i++ {
+			if r.r.Headers(&obj, i) {
+				hh.Add(string(obj.Name()), string(obj.Value()))
+			}
+		}
+		r.hdr = hdr
+		r.rawHdr = hdr.Clone()
+	}
+	return r.hdr
+}
+
 func (r *Request) FetchChanges(id uint32, builder *flatbuffers.Builder) bool {
-	if r.path == nil {
+	if r.path == nil && r.hdr == nil {
 		return false
 	}
 
@@ -65,9 +88,48 @@ func (r *Request) FetchChanges(id uint32, builder *flatbuffers.Builder) bool {
 		path = builder.CreateByteString(r.path)
 	}
 
+	var hdrVec flatbuffers.UOffsetT
+	if r.hdr != nil {
+		hdrs := []flatbuffers.UOffsetT{}
+		oldHdr := r.rawHdr
+		newHdr := r.hdr.View()
+		for n := range oldHdr {
+			if _, ok := newHdr[n]; !ok {
+				// deleted
+				name := builder.CreateString(n)
+				A6.TextEntryStart(builder)
+				A6.TextEntryAddName(builder, name)
+				te := A6.TextEntryEnd(builder)
+				hdrs = append(hdrs, te)
+			}
+		}
+		for n, v := range newHdr {
+			if raw, ok := oldHdr[n]; !ok || raw[0] != v[0] {
+				// set
+				name := builder.CreateString(n)
+				value := builder.CreateString(v[0])
+				A6.TextEntryStart(builder)
+				A6.TextEntryAddName(builder, name)
+				A6.TextEntryAddValue(builder, value)
+				te := A6.TextEntryEnd(builder)
+				hdrs = append(hdrs, te)
+			}
+		}
+		size := len(hdrs)
+		hrc.RewriteStartHeadersVector(builder, size)
+		for i := size - 1; i >= 0; i-- {
+			te := hdrs[i]
+			builder.PrependUOffsetT(te)
+		}
+		hdrVec = builder.EndVector(size)
+	}
+
 	hrc.RewriteStart(builder)
 	if path > 0 {
 		hrc.RewriteAddPath(builder, path)
+	}
+	if hdrVec > 0 {
+		hrc.RewriteAddHeaders(builder, hdrVec)
 	}
 	rewrite := hrc.RewriteEnd(builder)
 
@@ -86,4 +148,18 @@ func CreateRequest(buf []byte) *Request {
 		r: hrc.GetRootAsReq(buf, 0),
 	}
 	return req
+}
+
+type Header struct {
+	http.Header
+}
+
+func newHeader() *Header {
+	return &Header{
+		Header: http.Header{},
+	}
+}
+
+func (h *Header) View() http.Header {
+	return h.Header
 }

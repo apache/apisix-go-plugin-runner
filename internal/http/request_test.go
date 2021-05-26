@@ -16,6 +16,7 @@ package http
 
 import (
 	"net"
+	"net/http"
 	"testing"
 
 	"github.com/apache/apisix-go-plugin-runner/internal/util"
@@ -38,10 +39,16 @@ func getRewriteAction(t *testing.T, b *flatbuffers.Builder) *hrc.Rewrite {
 	return nil
 }
 
+type pair struct {
+	name  string
+	value string
+}
+
 type reqOpt struct {
-	srcIP  []byte
-	method A6.Method
-	path   string
+	srcIP   []byte
+	method  A6.Method
+	path    string
+	headers []pair
 }
 
 func buildReq(opt reqOpt) []byte {
@@ -57,6 +64,28 @@ func buildReq(opt reqOpt) []byte {
 		path = builder.CreateString(opt.path)
 	}
 
+	hdrLen := len(opt.headers)
+	var hdrVec flatbuffers.UOffsetT
+	if hdrLen > 0 {
+		hdrs := []flatbuffers.UOffsetT{}
+		for _, v := range opt.headers {
+			name := builder.CreateString(v.name)
+			value := builder.CreateString(v.value)
+			A6.TextEntryStart(builder)
+			A6.TextEntryAddName(builder, name)
+			A6.TextEntryAddValue(builder, value)
+			te := A6.TextEntryEnd(builder)
+			hdrs = append(hdrs, te)
+		}
+		size := len(hdrs)
+		hrc.StopStartHeadersVector(builder, size)
+		for i := size - 1; i >= 0; i-- {
+			te := hdrs[i]
+			builder.PrependUOffsetT(te)
+		}
+		hdrVec = builder.EndVector(size)
+	}
+
 	hrc.ReqStart(builder)
 	hrc.ReqAddId(builder, 233)
 	hrc.ReqAddConfToken(builder, 1)
@@ -68,6 +97,9 @@ func buildReq(opt reqOpt) []byte {
 	}
 	if path > 0 {
 		hrc.ReqAddPath(builder, path)
+	}
+	if hdrVec > 0 {
+		hrc.ReqAddHeaders(builder, hdrVec)
 	}
 	r := hrc.ReqEnd(builder)
 	builder.Finish(r)
@@ -110,4 +142,47 @@ func TestPath(t *testing.T) {
 	assert.True(t, r.FetchChanges(1, builder))
 	rewrite := getRewriteAction(t, builder)
 	assert.Equal(t, "/go", string(rewrite.Path()))
+}
+
+func TestHeader(t *testing.T) {
+	out := buildReq(reqOpt{headers: []pair{
+		{"k", "v"},
+		{"cache-control", "no-cache"},
+		{"cache-control", "no-store"},
+		{"cat", "dog"},
+	}})
+	r := CreateRequest(out)
+	hdr := r.Header()
+	assert.Equal(t, "v", hdr.Get("k"))
+	assert.Equal(t, "no-cache", hdr.Get("Cache-Control"))
+	assert.Equal(t, "no-cache", hdr.Get("cache-control"))
+
+	hdr.Del("empty")
+	hdr.Del("k")
+	assert.Equal(t, "", hdr.Get("k"))
+
+	hdr.Set("cache-control", "max-age=10s")
+	assert.Equal(t, "max-age=10s", hdr.Get("Cache-Control"))
+	hdr.Del("cache-Control")
+	assert.Equal(t, "", hdr.Get("cache-control"))
+
+	hdr.Set("k", "v2")
+	hdr.Del("cat")
+
+	builder := util.GetBuilder()
+	assert.True(t, r.FetchChanges(1, builder))
+	rewrite := getRewriteAction(t, builder)
+	assert.Equal(t, 3, rewrite.HeadersLength())
+
+	exp := http.Header{}
+	exp.Set("Cache-Control", "")
+	exp.Set("cat", "")
+	exp.Set("k", "v2")
+	res := http.Header{}
+	for i := 0; i < rewrite.HeadersLength(); i++ {
+		e := &A6.TextEntry{}
+		rewrite.Headers(e, i)
+		res.Add(string(e.Name()), string(e.Value()))
+	}
+	assert.Equal(t, exp, res)
 }
