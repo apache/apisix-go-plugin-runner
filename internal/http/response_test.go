@@ -41,6 +41,7 @@ func getStopAction(t *testing.T, b *flatbuffers.Builder) *hrc.Stop {
 
 func TestFetchChanges(t *testing.T) {
 	r := CreateResponse()
+	defer ReuseResponse(r)
 	r.Write([]byte("hello"))
 	h := r.Header()
 	h.Set("foo", "bar")

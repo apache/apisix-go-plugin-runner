@@ -17,6 +17,7 @@ package http
 import (
 	"bytes"
 	"net/http"
+	"sync"
 
 	"github.com/api7/ext-plugin-proto/go/A6"
 	hrc "github.com/api7/ext-plugin-proto/go/A6/HTTPReqCall"
@@ -49,6 +50,12 @@ func (r *Response) WriteHeader(statusCode int) {
 		return
 	}
 	r.code = statusCode
+}
+
+func (r *Response) Reset() {
+	r.body = nil
+	r.code = 0
+	r.hdr = nil
 }
 
 func (r *Response) FetchChanges(id uint32, builder *flatbuffers.Builder) bool {
@@ -112,6 +119,17 @@ func (r *Response) FetchChanges(id uint32, builder *flatbuffers.Builder) bool {
 	return true
 }
 
+var respPool = sync.Pool{
+	New: func() interface{} {
+		return &Response{}
+	},
+}
+
 func CreateResponse() *Response {
-	return &Response{}
+	return respPool.Get().(*Response)
+}
+
+func ReuseResponse(r *Response) {
+	r.Reset()
+	respPool.Put(r)
 }

@@ -45,7 +45,10 @@ func reportAction(id uint32, req *inHTTP.Request, resp *inHTTP.Response) *flatbu
 
 func HTTPReqCall(buf []byte) (*flatbuffers.Builder, error) {
 	req := inHTTP.CreateRequest(buf)
+	defer inHTTP.ReuseRequest(req)
+
 	resp := inHTTP.CreateResponse()
+	defer inHTTP.ReuseResponse(resp)
 
 	token := req.ConfToken()
 	conf, err := GetRuleConf(token)

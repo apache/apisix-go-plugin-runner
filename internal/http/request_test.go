@@ -116,6 +116,7 @@ func TestSrcIp(t *testing.T) {
 		out := buildReq(reqOpt{srcIP: ip})
 		r := CreateRequest(out)
 		assert.Equal(t, ip, r.SrcIP())
+		ReuseRequest(r)
 	}
 }
 

@@ -17,6 +17,7 @@ package http
 import (
 	"net"
 	"net/http"
+	"sync"
 
 	pkgHTTP "github.com/apache/apisix-go-plugin-runner/pkg/http"
 	"github.com/api7/ext-plugin-proto/go/A6"
@@ -76,6 +77,11 @@ func (r *Request) Header() pkgHTTP.Header {
 		r.rawHdr = hdr.Clone()
 	}
 	return r.hdr
+}
+
+func (r *Request) Reset() {
+	r.path = nil
+	r.hdr = nil
 }
 
 func (r *Request) FetchChanges(id uint32, builder *flatbuffers.Builder) bool {
@@ -143,11 +149,21 @@ func (r *Request) FetchChanges(id uint32, builder *flatbuffers.Builder) bool {
 	return true
 }
 
+var reqPool = sync.Pool{
+	New: func() interface{} {
+		return &Request{}
+	},
+}
+
 func CreateRequest(buf []byte) *Request {
-	req := &Request{
-		r: hrc.GetRootAsReq(buf, 0),
-	}
+	req := reqPool.Get().(*Request)
+	req.r = hrc.GetRootAsReq(buf, 0)
 	return req
+}
+
+func ReuseRequest(r *Request) {
+	r.Reset()
+	reqPool.Put(r)
 }
 
 type Header struct {
