@@ -61,6 +61,7 @@ compress-tar:
 	tar -zcvf $(RELEASE_SRC).tgz \
 	./cmd \
 	./internal \
+	./pkg \
 	LICENSE \
 	Makefile \
 	go.mod \
