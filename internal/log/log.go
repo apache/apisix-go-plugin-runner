@@ -27,7 +27,7 @@ var (
 
 func newLogger() *zap.SugaredLogger {
 	var level = zap.NewAtomicLevel()
-	level.SetLevel(zapcore.InfoLevel)
+	level.SetLevel(zapcore.WarnLevel)
 
 	core := zapcore.NewCore(
 		zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig()),
