@@ -15,6 +15,7 @@
 package plugin
 
 import (
+	"context"
 	"net/http"
 
 	hrc "github.com/api7/ext-plugin-proto/go/A6/HTTPReqCall"
@@ -25,7 +26,7 @@ import (
 	pkgHTTP "github.com/apache/apisix-go-plugin-runner/pkg/http"
 )
 
-func handle(conf RuleConf, w http.ResponseWriter, r pkgHTTP.Request) error {
+func handle(conf RuleConf, ctx context.Context, w http.ResponseWriter, r pkgHTTP.Request) error {
 	return nil
 }
 
@@ -33,6 +34,10 @@ func reportAction(id uint32, req *inHTTP.Request, resp *inHTTP.Response) *flatbu
 	builder := util.GetBuilder()
 
 	if resp != nil && resp.FetchChanges(id, builder) {
+		return builder
+	}
+
+	if req != nil && req.FetchChanges(id, builder) {
 		return builder
 	}
 
@@ -55,7 +60,9 @@ func HTTPReqCall(buf []byte) (*flatbuffers.Builder, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = handle(conf, resp, req)
+
+	ctx := context.Background()
+	err = handle(conf, ctx, resp, req)
 	if err != nil {
 		return nil, err
 	}

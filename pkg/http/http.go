@@ -32,6 +32,11 @@ import (
 type Request interface {
 	// ID returns the request id
 	ID() uint32
+	// ConfToken returns the token represents the configuration of current route.
+	// Each route have its unique token, so we can use it to distinguish different
+	// route in the same plugin.
+	ConfToken() uint32
+
 	// SrcIP returns the client's IP
 	SrcIP() net.IP
 	// Method returns the HTTP method (GET, POST, PUT, etc.)
