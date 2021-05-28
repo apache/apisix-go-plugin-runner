@@ -17,6 +17,7 @@ package http
 import (
 	"net"
 	"net/http"
+	"net/url"
 )
 
 // Request represents the HTTP request received by APISIX.
@@ -43,6 +44,8 @@ type Request interface {
 	SetPath([]byte)
 	// Header returns the HTTP headers
 	Header() Header
+	// Args returns the query string
+	Args() url.Values
 }
 
 // Header is like http.Header, but only implements the subset of its methods

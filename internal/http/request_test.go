@@ -17,6 +17,7 @@ package http
 import (
 	"net"
 	"net/http"
+	"net/url"
 	"testing"
 
 	"github.com/apache/apisix-go-plugin-runner/internal/util"
@@ -49,6 +50,7 @@ type reqOpt struct {
 	method  A6.Method
 	path    string
 	headers []pair
+	args    []pair
 }
 
 func buildReq(opt reqOpt) []byte {
@@ -78,12 +80,34 @@ func buildReq(opt reqOpt) []byte {
 			hdrs = append(hdrs, te)
 		}
 		size := len(hdrs)
-		hrc.StopStartHeadersVector(builder, size)
+		hrc.RewriteStartHeadersVector(builder, size)
 		for i := size - 1; i >= 0; i-- {
 			te := hdrs[i]
 			builder.PrependUOffsetT(te)
 		}
 		hdrVec = builder.EndVector(size)
+	}
+
+	argsLen := len(opt.args)
+	var argsVec flatbuffers.UOffsetT
+	if argsLen > 0 {
+		args := []flatbuffers.UOffsetT{}
+		for _, v := range opt.args {
+			name := builder.CreateString(v.name)
+			value := builder.CreateString(v.value)
+			A6.TextEntryStart(builder)
+			A6.TextEntryAddName(builder, name)
+			A6.TextEntryAddValue(builder, value)
+			te := A6.TextEntryEnd(builder)
+			args = append(args, te)
+		}
+		size := len(args)
+		hrc.RewriteStartArgsVector(builder, size)
+		for i := size - 1; i >= 0; i-- {
+			te := args[i]
+			builder.PrependUOffsetT(te)
+		}
+		argsVec = builder.EndVector(size)
 	}
 
 	hrc.ReqStart(builder)
@@ -100,6 +124,9 @@ func buildReq(opt reqOpt) []byte {
 	}
 	if hdrVec > 0 {
 		hrc.ReqAddHeaders(builder, hdrVec)
+	}
+	if argsVec > 0 {
+		hrc.ReqAddArgs(builder, argsVec)
 	}
 	r := hrc.ReqEnd(builder)
 	builder.Finish(r)
@@ -186,4 +213,41 @@ func TestHeader(t *testing.T) {
 		res.Add(string(e.Name()), string(e.Value()))
 	}
 	assert.Equal(t, exp, res)
+}
+
+func TestArgs(t *testing.T) {
+	out := buildReq(reqOpt{args: []pair{
+		{"del", "a"},
+		{"override", "a"},
+		{"add", "a"},
+	}})
+	r := CreateRequest(out)
+	args := r.Args()
+	args.Add("add", "b")
+	args.Set("set", "a")
+	args.Set("override", "b")
+	args.Del("del")
+
+	builder := util.GetBuilder()
+	assert.True(t, r.FetchChanges(1, builder))
+	rewrite := getRewriteAction(t, builder)
+
+	exp := url.Values{}
+	exp.Set("set", "a")
+	exp.Set("override", "b")
+	exp.Add("add", "a")
+	exp.Add("add", "b")
+	deleted := ""
+	res := url.Values{}
+	for i := 0; i < rewrite.ArgsLength(); i++ {
+		e := &A6.TextEntry{}
+		rewrite.Args(e, i)
+		if e.Value() == nil {
+			deleted = string(e.Name())
+		} else {
+			res.Add(string(e.Name()), string(e.Value()))
+		}
+	}
+	assert.Equal(t, exp, res)
+	assert.Equal(t, "del", deleted)
 }

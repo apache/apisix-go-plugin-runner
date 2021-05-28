@@ -17,6 +17,8 @@ package http
 import (
 	"net"
 	"net/http"
+	"net/url"
+	"reflect"
 	"sync"
 
 	pkgHTTP "github.com/apache/apisix-go-plugin-runner/pkg/http"
@@ -33,6 +35,9 @@ type Request struct {
 
 	hdr    *Header
 	rawHdr http.Header
+
+	args    url.Values
+	rawArgs url.Values
 }
 
 func (r *Request) ConfToken() uint32 {
@@ -79,13 +84,45 @@ func (r *Request) Header() pkgHTTP.Header {
 	return r.hdr
 }
 
+func cloneUrlValues(oldV url.Values) url.Values {
+	nv := 0
+	for _, vv := range oldV {
+		nv += len(vv)
+	}
+	sv := make([]string, nv)
+	newV := make(url.Values, len(oldV))
+	for k, vv := range oldV {
+		n := copy(sv, vv)
+		newV[k] = sv[:n:n]
+		sv = sv[n:]
+	}
+	return newV
+}
+
+func (r *Request) Args() url.Values {
+	if r.args == nil {
+		args := url.Values{}
+		size := r.r.ArgsLength()
+		obj := A6.TextEntry{}
+		for i := 0; i < size; i++ {
+			if r.r.Args(&obj, i) {
+				args.Add(string(obj.Name()), string(obj.Value()))
+			}
+		}
+		r.args = args
+		r.rawArgs = cloneUrlValues(args)
+	}
+	return r.args
+}
+
 func (r *Request) Reset() {
 	r.path = nil
 	r.hdr = nil
+	r.args = nil
 }
 
 func (r *Request) FetchChanges(id uint32, builder *flatbuffers.Builder) bool {
-	if r.path == nil && r.hdr == nil {
+	if r.path == nil && r.hdr == nil && r.args == nil {
 		return false
 	}
 
@@ -130,12 +167,53 @@ func (r *Request) FetchChanges(id uint32, builder *flatbuffers.Builder) bool {
 		hdrVec = builder.EndVector(size)
 	}
 
+	var argsVec flatbuffers.UOffsetT
+	if r.args != nil {
+		args := []flatbuffers.UOffsetT{}
+		oldArgs := r.rawArgs
+		newArgs := r.args
+		for n := range oldArgs {
+			if _, ok := newArgs[n]; !ok {
+				// deleted
+				name := builder.CreateString(n)
+				A6.TextEntryStart(builder)
+				A6.TextEntryAddName(builder, name)
+				te := A6.TextEntryEnd(builder)
+				args = append(args, te)
+			}
+		}
+		for n, v := range newArgs {
+			if raw, ok := oldArgs[n]; !ok || !reflect.DeepEqual(raw, v) {
+				// set / add
+				for _, vv := range v {
+					name := builder.CreateString(n)
+					value := builder.CreateString(vv)
+					A6.TextEntryStart(builder)
+					A6.TextEntryAddName(builder, name)
+					A6.TextEntryAddValue(builder, value)
+					te := A6.TextEntryEnd(builder)
+					args = append(args, te)
+				}
+			}
+		}
+		size := len(args)
+		hrc.RewriteStartArgsVector(builder, size)
+		for i := size - 1; i >= 0; i-- {
+			te := args[i]
+			builder.PrependUOffsetT(te)
+		}
+		argsVec = builder.EndVector(size)
+	}
+
 	hrc.RewriteStart(builder)
 	if path > 0 {
 		hrc.RewriteAddPath(builder, path)
 	}
 	if hdrVec > 0 {
 		hrc.RewriteAddHeaders(builder, hdrVec)
+	}
+	if argsVec > 0 {
+		hrc.RewriteAddArgs(builder, argsVec)
 	}
 	rewrite := hrc.RewriteEnd(builder)
 
