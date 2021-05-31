@@ -64,6 +64,7 @@ compress-tar:
 	./pkg \
 	LICENSE \
 	Makefile \
+	NOTICE \
 	go.mod \
 	go.sum \
 	*.md
