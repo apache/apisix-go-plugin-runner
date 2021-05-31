@@ -40,7 +40,7 @@ build:
 
 .PHONY: lint
 lint:
-	golangci-lint run --verbose
+	golangci-lint run --verbose ./...
 
 .PHONY: test
 test:

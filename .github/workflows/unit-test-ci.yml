@@ -16,22 +16,27 @@
 # specific language governing permissions and limitations
 # under the License.
 #
-run:
-  skip-files:
-    - ".*_test.go$"
+name: unit-test-ci
 
-linters:
-  disable-all: true
-  enable:
-    - deadcode
-    - errcheck
-    - goimports
-    - gosimple
-    - ineffassign
-    - misspell
-    - staticcheck
-    - structcheck
-    - unconvert
-    - unused
-    - varcheck
-    - vet
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+jobs:
+  run-test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: setup go
+      uses: actions/setup-go@v1
+      with:
+        go-version: '1.15'
+    - name: run unit test
+      run: |
+        make test
+    - name: upload coverage profile
+      run: |
+        bash <(curl -s https://codecov.io/bash)

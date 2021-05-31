@@ -16,22 +16,22 @@
 # specific language governing permissions and limitations
 # under the License.
 #
-run:
-  skip-files:
-    - ".*_test.go$"
-
-linters:
-  disable-all: true
-  enable:
-    - deadcode
-    - errcheck
-    - goimports
-    - gosimple
-    - ineffassign
-    - misspell
-    - staticcheck
-    - structcheck
-    - unconvert
-    - unused
-    - varcheck
-    - vet
+name: spell-checker
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+jobs:
+  misspell:
+    name: runner / misspell
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code.
+        uses: actions/checkout@v1
+      - name: Install
+        run: |
+          wget -O - -q https://git.io/misspell | sh -s -- -b .
+      - name: Misspell
+        run: |
+          find . -name "*.go" -or -name "*.md" -or -name "*.yml" -type f | xargs ./misspell -error
