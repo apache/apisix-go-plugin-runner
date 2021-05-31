@@ -175,9 +175,16 @@ func Run() {
 	}
 	log.Infof("listening to %s", sockAddr)
 
+	// clean up sock file created by others
 	if err := os.RemoveAll(sockAddr); err != nil {
 		log.Fatalf("remove file %s: %s", sockAddr, err)
 	}
+	// clean up sock file created by me
+	defer func() {
+		if err := os.RemoveAll(sockAddr); err != nil {
+			log.Errorf("remove file %s: %s", sockAddr, err)
+		}
+	}()
 
 	l, err := net.Listen("unix", sockAddr)
 	if err != nil {

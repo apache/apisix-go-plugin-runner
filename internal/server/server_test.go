@@ -19,6 +19,7 @@ import (
 	"encoding/binary"
 	"net"
 	"os"
+	"syscall"
 	"testing"
 	"time"
 
@@ -34,7 +35,8 @@ func TestGetSockAddr(t *testing.T) {
 }
 
 func TestRun(t *testing.T) {
-	addr := "unix:/tmp/x.sock"
+	path := "/tmp/x.sock"
+	addr := "unix:" + path
 	os.Setenv(SockAddrEnv, addr)
 	os.Setenv(ConfCacheTTLEnv, "60")
 
@@ -65,4 +67,10 @@ func TestRun(t *testing.T) {
 		defer conn.Close()
 		conn.Write(c.header)
 	}
+
+	syscall.Kill(syscall.Getpid(), syscall.SIGINT)
+	time.Sleep(10 * time.Millisecond)
+
+	_, err := os.Stat(path)
+	assert.True(t, os.IsNotExist(err))
 }
