@@ -16,7 +16,6 @@ package server
 
 import (
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -27,10 +26,11 @@ import (
 	"syscall"
 	"time"
 
+	flatbuffers "github.com/google/flatbuffers/go"
+
 	"github.com/apache/apisix-go-plugin-runner/internal/log"
 	"github.com/apache/apisix-go-plugin-runner/internal/plugin"
 	"github.com/apache/apisix-go-plugin-runner/internal/util"
-	flatbuffers "github.com/google/flatbuffers/go"
 )
 
 const (
@@ -48,11 +48,13 @@ const (
 )
 
 func readErr(n int, err error, required int) bool {
-	if n < required {
-		err = errors.New("truncated")
+	if 0 < n && n < required {
+		err = fmt.Errorf("truncated, only get the first %d bytes", n)
 	}
-	if err != nil && err != io.EOF {
-		log.Errorf("read: %s", err)
+	if err != nil {
+		if err != io.EOF {
+			log.Errorf("read: %s", err)
+		}
 		return true
 	}
 	return false

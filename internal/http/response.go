@@ -31,7 +31,9 @@ type Response struct {
 }
 
 func (r *Response) Header() http.Header {
-	r.hdr = http.Header{}
+	if r.hdr == nil {
+		r.hdr = http.Header{}
+	}
 	return r.hdr
 }
 
@@ -58,8 +60,12 @@ func (r *Response) Reset() {
 	r.hdr = nil
 }
 
+func (r *Response) HasChange() bool {
+	return !(r.body == nil && r.code == 0 && len(r.hdr) == 0)
+}
+
 func (r *Response) FetchChanges(id uint32, builder *flatbuffers.Builder) bool {
-	if r.body == nil && r.code == 0 && len(r.hdr) == 0 {
+	if !r.HasChange() {
 		return false
 	}
 

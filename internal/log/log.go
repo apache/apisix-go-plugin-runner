@@ -33,7 +33,7 @@ func newLogger() *zap.SugaredLogger {
 		zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig()),
 		os.Stdout,
 		level)
-	lg := zap.New(core, zap.AddStacktrace(zap.ErrorLevel), zap.AddCaller())
+	lg := zap.New(core, zap.AddStacktrace(zap.ErrorLevel), zap.AddCaller(), zap.AddCallerSkip(1))
 	return lg.Sugar()
 }
 
