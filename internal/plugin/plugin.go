@@ -15,18 +15,89 @@
 package plugin
 
 import (
-	"context"
+	"errors"
+	"fmt"
 	"net/http"
 
 	hrc "github.com/api7/ext-plugin-proto/go/A6/HTTPReqCall"
 	flatbuffers "github.com/google/flatbuffers/go"
 
 	inHTTP "github.com/apache/apisix-go-plugin-runner/internal/http"
+	"github.com/apache/apisix-go-plugin-runner/internal/log"
 	"github.com/apache/apisix-go-plugin-runner/internal/util"
 	pkgHTTP "github.com/apache/apisix-go-plugin-runner/pkg/http"
 )
 
-func handle(conf RuleConf, ctx context.Context, w http.ResponseWriter, r pkgHTTP.Request) error {
+type ParseConfFunc func(in []byte) (conf interface{}, err error)
+type FilterFunc func(conf interface{}, w http.ResponseWriter, r pkgHTTP.Request)
+
+type pluginOpts struct {
+	ParseConf ParseConfFunc
+	Filter    FilterFunc
+}
+
+type ErrPluginRegistered struct {
+	name string
+}
+
+func (err ErrPluginRegistered) Error() string {
+	return fmt.Sprintf("plugin %s registered", err.name)
+}
+
+var (
+	pluginRegistry = map[string]*pluginOpts{}
+
+	ErrMissingName            = errors.New("missing name")
+	ErrMissingParseConfMethod = errors.New("missing ParseConf method")
+	ErrMissingFilterMethod    = errors.New("missing Filter method")
+)
+
+func RegisterPlugin(name string, pc ParseConfFunc, sv FilterFunc) error {
+	if name == "" {
+		return ErrMissingName
+	}
+	if pc == nil {
+		return ErrMissingParseConfMethod
+	}
+	if sv == nil {
+		return ErrMissingFilterMethod
+	}
+
+	opt := &pluginOpts{
+		ParseConf: pc,
+		Filter:    sv,
+	}
+	if _, found := pluginRegistry[name]; found {
+		return ErrPluginRegistered{name}
+	}
+	pluginRegistry[name] = opt
+	return nil
+}
+
+func findPlugin(name string) *pluginOpts {
+	if opt, found := pluginRegistry[name]; found {
+		return opt
+	}
+	return nil
+}
+
+func filter(conf RuleConf, w *inHTTP.Response, r pkgHTTP.Request) error {
+	for _, c := range conf {
+		plugin := findPlugin(c.Name)
+		if plugin == nil {
+			log.Warnf("can't find plugin %s, skip", c.Name)
+			continue
+		}
+
+		log.Infof("run plugin %s", c.Name)
+
+		plugin.Filter(c.Value, w, r)
+
+		if w.HasChange() {
+			// response is generated, no need to continue
+			break
+		}
+	}
 	return nil
 }
 
@@ -61,8 +132,7 @@ func HTTPReqCall(buf []byte) (*flatbuffers.Builder, error) {
 		return nil, err
 	}
 
-	ctx := context.Background()
-	err = handle(conf, ctx, resp, req)
+	err = filter(conf, resp, req)
 	if err != nil {
 		return nil, err
 	}

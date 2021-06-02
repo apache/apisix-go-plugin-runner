@@ -15,6 +15,7 @@
 package plugin
 
 import (
+	"errors"
 	"sort"
 	"sync"
 	"testing"
@@ -45,6 +46,59 @@ func TestPrepareConf(t *testing.T) {
 	out = bd.FinishedBytes()
 	resp = pc.GetRootAsResp(out, 0)
 	assert.Equal(t, uint32(2), resp.ConfToken())
+}
+
+func prepareConfWithData(builder *flatbuffers.Builder, arg ...flatbuffers.UOffsetT) {
+	tes := []flatbuffers.UOffsetT{}
+	for i := 0; i < len(arg); i += 2 {
+		A6.TextEntryStart(builder)
+		name := arg[i]
+		value := arg[i+1]
+		A6.TextEntryAddName(builder, name)
+		A6.TextEntryAddValue(builder, value)
+		te := A6.TextEntryEnd(builder)
+		tes = append(tes, te)
+	}
+
+	pc.ReqStartConfVector(builder, len(tes))
+	for i := len(tes) - 1; i >= 0; i-- {
+		builder.PrependUOffsetT(tes[i])
+	}
+	v := builder.EndVector(len(tes))
+
+	pc.ReqStart(builder)
+	pc.ReqAddConf(builder, v)
+	root := pc.ReqEnd(builder)
+	builder.Finish(root)
+	b := builder.FinishedBytes()
+
+	PrepareConf(b)
+}
+
+func TestPrepareConfUnknownPlugin(t *testing.T) {
+	InitConfCache(1 * time.Millisecond)
+	builder := flatbuffers.NewBuilder(1024)
+
+	name := builder.CreateString("xxx")
+	value := builder.CreateString(`{"body":"yes"}`)
+	prepareConfWithData(builder, name, value)
+	res, _ := GetRuleConf(1)
+	assert.Equal(t, 0, len(res))
+}
+
+func TestPrepareConfBadConf(t *testing.T) {
+	InitConfCache(1 * time.Millisecond)
+	builder := flatbuffers.NewBuilder(1024)
+
+	f := func(in []byte) (conf interface{}, err error) {
+		return nil, errors.New("ouch")
+	}
+	RegisterPlugin("bad_conf", f, emptyFilter)
+	name := builder.CreateString("bad_conf")
+	value := builder.CreateString(`{"body":"yes"}`)
+	prepareConfWithData(builder, name, value)
+	res, _ := GetRuleConf(1)
+	assert.Equal(t, 0, len(res))
 }
 
 func TestPrepareConfConcurrently(t *testing.T) {
@@ -104,6 +158,7 @@ func TestGetRuleConf(t *testing.T) {
 }
 
 func TestGetRuleConfCheckConf(t *testing.T) {
+	RegisterPlugin("echo", emptyParseConf, emptyFilter)
 	InitConfCache(1 * time.Millisecond)
 	builder := flatbuffers.NewBuilder(1024)
 

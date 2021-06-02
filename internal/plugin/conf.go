@@ -54,13 +54,33 @@ func genCacheToken() uint32 {
 
 func PrepareConf(buf []byte) (*flatbuffers.Builder, error) {
 	req := pc.GetRootAsReq(buf, 0)
-	entries := make(RuleConf, req.ConfLength())
+	entries := RuleConf{}
 
 	te := A6.TextEntry{}
 	for i := 0; i < req.ConfLength(); i++ {
 		if req.Conf(&te, i) {
-			entries[i].Name = string(te.Name())
-			entries[i].Value = te.Value
+			name := string(te.Name())
+			plugin := findPlugin(name)
+			if plugin == nil {
+				log.Warnf("can't find plugin %s, skip", name)
+				continue
+			}
+
+			log.Infof("prepare conf for plugin %s", name)
+
+			v := te.Value()
+			conf, err := plugin.ParseConf(v)
+			if err != nil {
+				log.Errorf(
+					"failed to parse configuration for plugin %s, configuration: %s",
+					name, string(v))
+				continue
+			}
+
+			entries = append(entries, ConfEntry{
+				Name:  name,
+				Value: conf,
+			})
 		}
 	}
 
