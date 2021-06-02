@@ -28,6 +28,8 @@ on:
 jobs:
   run-test:
     runs-on: ubuntu-latest
+    env:
+      CODECOV_TOKEN: 892a8adc-7df4-41f8-ba74-92978fc6c561
     steps:
     - uses: actions/checkout@v2
     - name: setup go
