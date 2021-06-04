@@ -17,11 +17,15 @@ package main
 import (
 	"fmt"
 	"io"
+	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
+	"github.com/thediveo/enumflag"
+	"go.uber.org/zap/zapcore"
 
-	"github.com/apache/apisix-go-plugin-runner/internal/server"
+	"github.com/apache/apisix-go-plugin-runner/pkg/runner"
 )
 
 var (
@@ -46,14 +50,60 @@ func newVersionCommand() *cobra.Command {
 	return cmd
 }
 
+type RunMode enumflag.Flag
+
+const (
+	Dev  RunMode = iota // Development
+	Prod                // Product
+
+	LogFilePath = "./logs/runner.log"
+)
+
+var RunModeIds = map[RunMode][]string{
+	Prod: {"prod"},
+	Dev:  {"dev"},
+}
+
+func openFileToWrite(name string) (*os.File, error) {
+	dir := filepath.Dir(name)
+	if dir != "." {
+		err := os.MkdirAll(dir, 0755)
+		if err != nil {
+			return nil, err
+		}
+	}
+	f, err := os.OpenFile(name, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+	if err != nil {
+		return nil, err
+	}
+
+	return f, nil
+}
+
 func newRunCommand() *cobra.Command {
+	var mode RunMode
 	cmd := &cobra.Command{
 		Use:   "run",
 		Short: "run",
 		Run: func(cmd *cobra.Command, _ []string) {
-			server.Run()
+			cfg := runner.RunnerConfig{}
+			if mode == Prod {
+				cfg.LogLevel = zapcore.WarnLevel
+				f, err := openFileToWrite(LogFilePath)
+				if err != nil {
+					log.Fatalf("failed to open log: %s", err)
+				}
+				cfg.LogOutput = f
+			}
+			runner.Run(cfg)
 		},
 	}
+
+	cmd.PersistentFlags().VarP(
+		enumflag.New(&mode, "mode", RunModeIds, enumflag.EnumCaseInsensitive),
+		"mode", "m",
+		"the runner's run mode; can be 'prod' or 'dev', default to 'dev'")
+
 	return cmd
 }
 
