@@ -21,3 +21,4 @@
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/apache/apisix-go-plugin-runner)](https://goreportcard.com/report/github.com/apache/apisix-go-plugin-runner)
 [![Build Status](https://github.com/apache/apisix-go-plugin-runner/workflows/unit-test-ci/badge.svg?branch=master)](https://github.com/apache/apisix-go-plugin-runner/actions)
+[![Codecov](https://codecov.io/gh/apache/apisix-go-plugin-runner/branch/master/graph/badge.svg)](https://codecov.io/gh/apache/apisix-go-plugin-runner)
