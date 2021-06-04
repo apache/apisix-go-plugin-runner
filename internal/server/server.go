@@ -167,7 +167,7 @@ func Run() {
 		log.Fatalf("A valid conf cache ttl should be set via environment variable %s",
 			ConfCacheTTLEnv)
 	}
-	log.Infof("conf cache ttl is %v", ttl)
+	log.Warnf("conf cache ttl is %v", ttl)
 
 	plugin.InitConfCache(ttl)
 
@@ -175,7 +175,7 @@ func Run() {
 	if sockAddr == "" {
 		log.Fatalf("A valid socket address should be set via environment variable %s", SockAddrEnv)
 	}
-	log.Infof("listening to %s", sockAddr)
+	log.Warnf("listening to %s", sockAddr)
 
 	// clean up sock file created by others
 	if err := os.RemoveAll(sockAddr); err != nil {
@@ -217,6 +217,6 @@ func Run() {
 	}()
 
 	sig := <-quit
-	log.Infof("server receive %s and exit", sig.String())
+	log.Warnf("server receive %s and exit", sig.String())
 	close(done)
 }
