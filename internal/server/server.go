@@ -45,6 +45,11 @@ const (
 	RPCError = iota
 	RPCPrepareConf
 	RPCHTTPReqCall
+	RPCTest = 127 // used only in test
+)
+
+var (
+	dealRPCTest func(buf []byte) (*flatbuffers.Builder, error)
 )
 
 func readErr(n int, err error, required int) bool {
@@ -64,6 +69,46 @@ func writeErr(n int, err error) {
 	if err != nil {
 		log.Errorf("write: %s", err)
 	}
+}
+
+func generateErrorReport(err error) (ty byte, out []byte) {
+	log.Errorf("%s", err)
+
+	ty = RPCError
+	bd := ReportError(err)
+	out = bd.FinishedBytes()
+	util.PutBuilder(bd)
+	return
+}
+
+func dispatchRPC(ty byte, in []byte) (byte, []byte) {
+	var err error
+	var bd *flatbuffers.Builder
+	switch ty {
+	case RPCPrepareConf:
+		bd, err = plugin.PrepareConf(in)
+	case RPCHTTPReqCall:
+		bd, err = plugin.HTTPReqCall(in)
+	case RPCTest: // Just for test
+		bd, err = dealRPCTest(in)
+	default:
+		err = UnknownType{ty}
+	}
+
+	var out []byte
+	if err != nil {
+		ty, out = generateErrorReport(err)
+	} else {
+		out = bd.FinishedBytes()
+		util.PutBuilder(bd)
+		size := len(out)
+		if size > MaxDataSize {
+			err = fmt.Errorf("the max length of data is %d but got %d", MaxDataSize, size)
+			ty, out = generateErrorReport(err)
+		}
+	}
+
+	return ty, out
 }
 
 func handleConn(c net.Conn) {
@@ -97,48 +142,23 @@ func handleConn(c net.Conn) {
 			break
 		}
 
-		var bd *flatbuffers.Builder
-		switch ty {
-		case RPCPrepareConf:
-			bd, err = plugin.PrepareConf(buf)
-		case RPCHTTPReqCall:
-			bd, err = plugin.HTTPReqCall(buf)
-		default:
-			err = UnknownType{ty}
-		}
+		ty, out := dispatchRPC(ty, buf)
 
-		out := bd.FinishedBytes()
 		size := len(out)
-		if size > MaxDataSize {
-			err = fmt.Errorf("the max length of data is %d but got %d", MaxDataSize, size)
-		}
-
-		if err != nil {
-			log.Errorf("%s", err)
-
-			ty = RPCError
-			util.PutBuilder(bd)
-			bd = ReportError(err)
-			out = bd.FinishedBytes()
-		}
-
 		binary.BigEndian.PutUint32(header, uint32(size))
 		header[0] = ty
 
 		n, err = c.Write(header)
 		if err != nil {
 			writeErr(n, err)
-			util.PutBuilder(bd)
 			break
 		}
 
 		n, err = c.Write(out)
 		if err != nil {
 			writeErr(n, err)
-			util.PutBuilder(bd)
 			break
 		}
-		util.PutBuilder(bd)
 	}
 }
 

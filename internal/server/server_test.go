@@ -23,7 +23,11 @@ import (
 	"testing"
 	"time"
 
+	hrc "github.com/api7/ext-plugin-proto/go/A6/HTTPReqCall"
+	flatbuffers "github.com/google/flatbuffers/go"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/apache/apisix-go-plugin-runner/internal/util"
 )
 
 func TestGetSockAddr(t *testing.T) {
@@ -32,6 +36,31 @@ func TestGetSockAddr(t *testing.T) {
 
 	os.Setenv(SockAddrEnv, "unix:/tmp/x.sock")
 	assert.Equal(t, "/tmp/x.sock", getSockAddr())
+}
+
+func TestDispatchRPC_UnknownType(t *testing.T) {
+	ty, _ := dispatchRPC(126, []byte(""))
+	assert.Equal(t, byte(RPCError), ty)
+}
+
+func TestDispatchRPC_OutTooLarge(t *testing.T) {
+	dealRPCTest = func(buf []byte) (*flatbuffers.Builder, error) {
+		builder := util.GetBuilder()
+		bodyVec := builder.CreateByteVector(make([]byte, MaxDataSize+1))
+		hrc.StopStart(builder)
+		hrc.StopAddBody(builder, bodyVec)
+		stop := hrc.StopEnd(builder)
+
+		hrc.RespStart(builder)
+		hrc.RespAddId(builder, 1)
+		hrc.RespAddActionType(builder, hrc.ActionStop)
+		hrc.RespAddAction(builder, stop)
+		res := hrc.RespEnd(builder)
+		builder.Finish(res)
+		return builder, nil
+	}
+	ty, _ := dispatchRPC(RPCTest, []byte(""))
+	assert.Equal(t, byte(RPCError), ty)
 }
 
 func TestRun(t *testing.T) {

@@ -34,7 +34,8 @@ type Request interface {
 	ID() uint32
 	// ConfToken returns the token represents the configuration of current route.
 	// Each route have its unique token, so we can use it to distinguish different
-	// route in the same plugin.
+	// route in the same plugin. When the configuration of a route changed, the token
+	// will change too.
 	ConfToken() uint32
 
 	// SrcIP returns the client's IP
