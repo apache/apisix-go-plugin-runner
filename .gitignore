@@ -6,3 +6,4 @@ release/
 .DS_Store
 coverage.txt
 logs/
+*.svg

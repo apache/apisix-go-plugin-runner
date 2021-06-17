@@ -20,6 +20,8 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
+	"runtime/pprof"
 
 	"github.com/spf13/cobra"
 	"github.com/thediveo/enumflag"
@@ -55,13 +57,16 @@ type RunMode enumflag.Flag
 const (
 	Dev  RunMode = iota // Development
 	Prod                // Product
+	Prof                // Profile
 
-	LogFilePath = "./logs/runner.log"
+	ProfileFilePath = "./logs/profile."
+	LogFilePath     = "./logs/runner.log"
 )
 
 var RunModeIds = map[RunMode][]string{
 	Prod: {"prod"},
 	Dev:  {"dev"},
+	Prof: {"prof"},
 }
 
 func openFileToWrite(name string) (*os.File, error) {
@@ -94,6 +99,33 @@ func newRunCommand() *cobra.Command {
 					log.Fatalf("failed to open log: %s", err)
 				}
 				cfg.LogOutput = f
+			} else if mode == Prof {
+				cfg.LogLevel = zapcore.WarnLevel
+
+				cpuProfileFile := ProfileFilePath + "cpu"
+				f, err := os.Create(cpuProfileFile)
+				if err != nil {
+					log.Fatal("could not create CPU profile: ", err)
+				}
+				defer f.Close()
+				if err := pprof.StartCPUProfile(f); err != nil {
+					log.Fatal("could not start CPU profile: ", err)
+				}
+				defer pprof.StopCPUProfile()
+
+				defer func() {
+					memProfileFile := ProfileFilePath + "mem"
+					f, err := os.Create(memProfileFile)
+					if err != nil {
+						log.Fatal("could not create memory profile: ", err)
+					}
+					defer f.Close()
+
+					runtime.GC()
+					if err := pprof.WriteHeapProfile(f); err != nil {
+						log.Fatal("could not write memory profile: ", err)
+					}
+				}()
 			}
 			runner.Run(cfg)
 		},
