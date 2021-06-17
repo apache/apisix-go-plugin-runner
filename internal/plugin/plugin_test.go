@@ -15,6 +15,7 @@
 package plugin
 
 import (
+	"errors"
 	"net/http"
 	"testing"
 	"time"
@@ -58,6 +59,40 @@ func TestHTTPReqCall(t *testing.T) {
 	assert.Equal(t, hrc.ActionNONE, resp.ActionType())
 }
 
+func TestHTTPReqCall_FailedToParseConf(t *testing.T) {
+	InitConfCache(1 * time.Millisecond)
+
+	bazParseConf := func(in []byte) (conf interface{}, err error) {
+		return nil, errors.New("ouch")
+	}
+	bazFilter := func(conf interface{}, w http.ResponseWriter, r pkgHTTP.Request) {
+		w.Header().Add("foo", "bar")
+		assert.Equal(t, "foo", conf.(string))
+	}
+
+	RegisterPlugin("baz", bazParseConf, bazFilter)
+
+	builder := flatbuffers.NewBuilder(1024)
+	bazName := builder.CreateString("baz")
+	bazConf := builder.CreateString("")
+	prepareConfWithData(builder, bazName, bazConf)
+
+	hrc.ReqStart(builder)
+	hrc.ReqAddId(builder, 233)
+	hrc.ReqAddConfToken(builder, 1)
+	r := hrc.ReqEnd(builder)
+	builder.Finish(r)
+	out := builder.FinishedBytes()
+
+	b, err := HTTPReqCall(out)
+	assert.Nil(t, err)
+
+	out = b.FinishedBytes()
+	resp := hrc.GetRootAsResp(out, 0)
+	assert.Equal(t, uint32(233), resp.Id())
+	assert.Equal(t, hrc.ActionNONE, resp.ActionType())
+}
+
 func TestRegisterPlugin(t *testing.T) {
 	assert.Equal(t, ErrMissingParseConfMethod,
 		RegisterPlugin("bad_conf", nil, emptyFilter))
@@ -66,6 +101,8 @@ func TestRegisterPlugin(t *testing.T) {
 }
 
 func TestFilter(t *testing.T) {
+	InitConfCache(1 * time.Millisecond)
+
 	fooParseConf := func(in []byte) (conf interface{}, err error) {
 		return "foo", nil
 	}
