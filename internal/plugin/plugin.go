@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sync"
 
 	hrc "github.com/api7/ext-plugin-proto/go/A6/HTTPReqCall"
 	flatbuffers "github.com/google/flatbuffers/go"
@@ -36,6 +37,11 @@ type pluginOpts struct {
 	Filter    FilterFunc
 }
 
+type pluginRegistries struct {
+	sync.Mutex
+	opts map[string]*pluginOpts
+}
+
 type ErrPluginRegistered struct {
 	name string
 }
@@ -45,7 +51,7 @@ func (err ErrPluginRegistered) Error() string {
 }
 
 var (
-	pluginRegistry = map[string]*pluginOpts{}
+	pluginRegistry = pluginRegistries{opts: map[string]*pluginOpts{}}
 
 	ErrMissingName            = errors.New("missing name")
 	ErrMissingParseConfMethod = errors.New("missing ParseConf method")
@@ -67,15 +73,17 @@ func RegisterPlugin(name string, pc ParseConfFunc, sv FilterFunc) error {
 		ParseConf: pc,
 		Filter:    sv,
 	}
-	if _, found := pluginRegistry[name]; found {
+	pluginRegistry.Lock()
+	defer pluginRegistry.Unlock()
+	if _, found := pluginRegistry.opts[name]; found {
 		return ErrPluginRegistered{name}
 	}
-	pluginRegistry[name] = opt
+	pluginRegistry.opts[name] = opt
 	return nil
 }
 
 func findPlugin(name string) *pluginOpts {
-	if opt, found := pluginRegistry[name]; found {
+	if opt, found := pluginRegistry.opts[name]; found {
 		return opt
 	}
 	return nil
