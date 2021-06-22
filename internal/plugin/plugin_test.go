@@ -20,12 +20,12 @@ import (
 	"testing"
 	"time"
 
+	inHTTP "github.com/apache/apisix-go-plugin-runner/internal/http"
+	pkgHTTP "github.com/apache/apisix-go-plugin-runner/pkg/http"
+
 	hrc "github.com/api7/ext-plugin-proto/go/A6/HTTPReqCall"
 	flatbuffers "github.com/google/flatbuffers/go"
 	"github.com/stretchr/testify/assert"
-
-	inHTTP "github.com/apache/apisix-go-plugin-runner/internal/http"
-	pkgHTTP "github.com/apache/apisix-go-plugin-runner/pkg/http"
 )
 
 var (
@@ -94,10 +94,123 @@ func TestHTTPReqCall_FailedToParseConf(t *testing.T) {
 }
 
 func TestRegisterPlugin(t *testing.T) {
-	assert.Equal(t, ErrMissingParseConfMethod,
-		RegisterPlugin("bad_conf", nil, emptyFilter))
-	assert.Equal(t, ErrMissingFilterMethod,
-		RegisterPlugin("bad_conf", emptyParseConf, nil))
+	type args struct {
+		name string
+		pc   ParseConfFunc
+		sv   FilterFunc
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr error
+	}{
+		{
+			name: "test_MissingParseConfMethod",
+			args: args{
+				name: "1",
+				pc:   nil,
+				sv:   emptyFilter,
+			},
+			wantErr: ErrMissingParseConfMethod,
+		},
+		{
+			name: "test_MissingFilterMethod",
+			args: args{
+				name: "1",
+				pc:   emptyParseConf,
+				sv:   nil,
+			},
+			wantErr: ErrMissingFilterMethod,
+		},
+		{
+			name: "test_MissingParseConfMethod&FilterMethod",
+			args: args{
+				name: "1",
+				pc:   nil,
+				sv:   nil,
+			},
+			wantErr: ErrMissingParseConfMethod,
+		},
+		{
+			name: "test_MissingName&ParseConfMethod",
+			args: args{
+				name: "",
+				pc:   nil,
+				sv:   emptyFilter,
+			},
+			wantErr: ErrMissingName,
+		},
+		{
+			name: "test_MissingName&FilterMethod",
+			args: args{
+				name: "",
+				pc:   emptyParseConf,
+				sv:   nil,
+			},
+			wantErr: ErrMissingName,
+		},
+		{
+			name: "test_MissingAll",
+			args: args{
+				name: "",
+				pc:   nil,
+				sv:   nil,
+			},
+			wantErr: ErrMissingName,
+		},
+		{
+			name: "test_plugin1",
+			args: args{
+				name: "plugin1",
+				pc:   emptyParseConf,
+				sv:   emptyFilter,
+			},
+			wantErr: nil,
+		},
+		{
+			name: "test_plugin1_again",
+			args: args{
+				name: "plugin1",
+				pc:   emptyParseConf,
+				sv:   emptyFilter,
+			},
+			wantErr: ErrPluginRegistered{"plugin1"},
+		},
+		{
+			name: "test_plugin2",
+			args: args{
+				name: "plugin2111%#@#",
+				pc:   emptyParseConf,
+				sv:   emptyFilter,
+			},
+			wantErr: nil,
+		},
+		{
+			name: "test_plugin3",
+			args: args{
+				name: "plugin311*%#@#",
+				pc:   emptyParseConf,
+				sv:   emptyFilter,
+			},
+			wantErr: nil,
+		},
+		{
+			name: "test_plugin3_again",
+			args: args{
+				name: "plugin311*%#@#",
+				pc:   emptyParseConf,
+				sv:   emptyFilter,
+			},
+			wantErr: ErrPluginRegistered{"plugin311*%#@#"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := RegisterPlugin(tt.args.name, tt.args.pc, tt.args.sv); !assert.Equal(t, tt.wantErr, err) {
+				t.Errorf("RegisterPlugin() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
 }
 
 func TestFilter(t *testing.T) {
