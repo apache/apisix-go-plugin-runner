@@ -266,7 +266,7 @@ func TestRegisterPluginConcurrent(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			for i := 0; i < 10000; i++ {
+			for i := 0; i < 3; i++ {
 				go func(tt test) {
 					if err := RegisterPlugin(tt.args.name, tt.args.pc, tt.args.sv); !assert.Equal(t, tt.wantErr, err) {
 						t.Errorf("RegisterPlugin() error = %v, wantErr %v", err, tt.wantErr)
