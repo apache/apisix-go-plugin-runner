@@ -213,6 +213,71 @@ func TestRegisterPlugin(t *testing.T) {
 	}
 }
 
+func TestRegisterPluginConcurrent(t *testing.T) {
+	RegisterPlugin("test_concurrent-1", emptyParseConf, emptyFilter)
+	RegisterPlugin("test_concurrent-2", emptyParseConf, emptyFilter)
+	type args struct {
+		name string
+		pc   ParseConfFunc
+		sv   FilterFunc
+	}
+	type test struct {
+		name    string
+		args    args
+		wantErr error
+	}
+	tests := []test{
+		{
+			name: "test_concurrent-1",
+			args: args{
+				name: "test_concurrent-1",
+				pc:   emptyParseConf,
+				sv:   emptyFilter,
+			},
+			wantErr: ErrPluginRegistered{"test_concurrent-1"},
+		},
+		{
+			name: "test_concurrent-2#01",
+			args: args{
+				name: "test_concurrent-2",
+				pc:   emptyParseConf,
+				sv:   emptyFilter,
+			},
+			wantErr: ErrPluginRegistered{"test_concurrent-2"},
+		},
+		{
+			name: "test_concurrent-2#02",
+			args: args{
+				name: "test_concurrent-2",
+				pc:   emptyParseConf,
+				sv:   emptyFilter,
+			},
+			wantErr: ErrPluginRegistered{"test_concurrent-2"},
+		},
+		{
+			name: "test_concurrent-2#03",
+			args: args{
+				name: "test_concurrent-2",
+				pc:   emptyParseConf,
+				sv:   emptyFilter,
+			},
+			wantErr: ErrPluginRegistered{"test_concurrent-2"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			for i := 0; i < 10000; i++ {
+				go func(tt test) {
+					if err := RegisterPlugin(tt.args.name, tt.args.pc, tt.args.sv); !assert.Equal(t, tt.wantErr, err) {
+						t.Errorf("RegisterPlugin() error = %v, wantErr %v", err, tt.wantErr)
+					}
+				}(tt)
+			}
+
+		})
+	}
+}
+
 func TestFilter(t *testing.T) {
 	InitConfCache(1 * time.Millisecond)
 
