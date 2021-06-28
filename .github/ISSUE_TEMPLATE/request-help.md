@@ -12,4 +12,6 @@ assignees: ''
 ### Environment
 
 * APISIX Go Plugin Runner's version:
+* APISIX version:
 * Go version:
+* OS (cmd: `uname -a`):
