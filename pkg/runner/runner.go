@@ -19,8 +19,8 @@ import (
 
 	"go.uber.org/zap/zapcore"
 
-	"github.com/apache/apisix-go-plugin-runner/internal/log"
 	"github.com/apache/apisix-go-plugin-runner/internal/server"
+	"github.com/apache/apisix-go-plugin-runner/pkg/log"
 )
 
 // RunnerConfig is the configuration of the runner
