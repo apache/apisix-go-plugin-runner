@@ -16,10 +16,10 @@ package plugins
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 
 	pkgHTTP "github.com/apache/apisix-go-plugin-runner/pkg/http"
+	"github.com/apache/apisix-go-plugin-runner/pkg/log"
 	"github.com/apache/apisix-go-plugin-runner/pkg/plugin"
 )
 
@@ -58,6 +58,6 @@ func (p *Say) Filter(conf interface{}, w http.ResponseWriter, r pkgHTTP.Request)
 	w.Header().Add("X-Resp-A6-Runner", "Go")
 	_, err := w.Write([]byte(body))
 	if err != nil {
-		log.Printf("failed to write: %s", err)
+		log.Errorf("failed to write: %s", err)
 	}
 }

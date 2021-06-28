@@ -24,9 +24,9 @@ import (
 	flatbuffers "github.com/google/flatbuffers/go"
 
 	inHTTP "github.com/apache/apisix-go-plugin-runner/internal/http"
-	"github.com/apache/apisix-go-plugin-runner/internal/log"
 	"github.com/apache/apisix-go-plugin-runner/internal/util"
 	pkgHTTP "github.com/apache/apisix-go-plugin-runner/pkg/http"
+	"github.com/apache/apisix-go-plugin-runner/pkg/log"
 )
 
 type ParseConfFunc func(in []byte) (conf interface{}, err error)

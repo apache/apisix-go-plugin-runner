@@ -17,7 +17,6 @@ package main
 import (
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -27,6 +26,7 @@ import (
 	"github.com/thediveo/enumflag"
 	"go.uber.org/zap/zapcore"
 
+	"github.com/apache/apisix-go-plugin-runner/pkg/log"
 	"github.com/apache/apisix-go-plugin-runner/pkg/runner"
 )
 
@@ -105,11 +105,11 @@ func newRunCommand() *cobra.Command {
 				cpuProfileFile := ProfileFilePath + "cpu"
 				f, err := os.Create(cpuProfileFile)
 				if err != nil {
-					log.Fatal("could not create CPU profile: ", err)
+					log.Fatalf("could not create CPU profile: %s", err)
 				}
 				defer f.Close()
 				if err := pprof.StartCPUProfile(f); err != nil {
-					log.Fatal("could not start CPU profile: ", err)
+					log.Fatalf("could not start CPU profile: %s", err)
 				}
 				defer pprof.StopCPUProfile()
 
@@ -117,13 +117,13 @@ func newRunCommand() *cobra.Command {
 					memProfileFile := ProfileFilePath + "mem"
 					f, err := os.Create(memProfileFile)
 					if err != nil {
-						log.Fatal("could not create memory profile: ", err)
+						log.Fatalf("could not create memory profile: %s", err)
 					}
 					defer f.Close()
 
 					runtime.GC()
 					if err := pprof.WriteHeapProfile(f); err != nil {
-						log.Fatal("could not write memory profile: ", err)
+						log.Fatalf("could not write memory profile: %s", err)
 					}
 				}()
 			}
