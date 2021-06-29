@@ -16,6 +16,7 @@ package log
 
 import (
 	"os"
+	"sync"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -23,6 +24,8 @@ import (
 
 var (
 	logger *zap.SugaredLogger
+
+	loggerInit sync.Once
 )
 
 func NewLogger(level zapcore.Level, out zapcore.WriteSyncer) {
@@ -38,10 +41,12 @@ func NewLogger(level zapcore.Level, out zapcore.WriteSyncer) {
 }
 
 func getLogger() *zap.SugaredLogger {
-	if logger == nil {
-		// logger is not initialized, for example, running `go test`
-		NewLogger(zapcore.InfoLevel, os.Stdout)
-	}
+	loggerInit.Do(func() {
+		if logger == nil {
+			// logger is not initialized, for example, running `go test`
+			NewLogger(zapcore.InfoLevel, os.Stdout)
+		}
+	})
 	return logger
 }
 

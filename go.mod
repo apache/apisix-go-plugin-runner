@@ -11,4 +11,5 @@ require (
 	github.com/thediveo/enumflag v0.10.1
 	go.uber.org/multierr v1.7.0 // indirect
 	go.uber.org/zap v1.16.0
+	golang.org/x/time v0.0.0-20190308202827-9d24e82272b4
 )
