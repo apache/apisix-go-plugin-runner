@@ -41,6 +41,7 @@ type Plugin interface {
 }
 
 // RegisterPlugin register a plugin. Plugin which has the same name can't be registered twice.
+// This method should be called before calling `runner.Run`.
 func RegisterPlugin(p Plugin) error {
 	return plugin.RegisterPlugin(p.Name(), p.ParseConf, p.Filter)
 }
