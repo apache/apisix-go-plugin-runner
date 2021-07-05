@@ -31,7 +31,7 @@ type RunnerConfig struct {
 	LogOutput zapcore.WriteSyncer
 }
 
-// Run starts the runner and listen the socket
+// Run starts the runner and listen the socket configured by environment variable "APISIX_LISTEN_ADDRESS"
 func Run(cfg RunnerConfig) {
 	if cfg.LogOutput == nil {
 		cfg.LogOutput = os.Stdout

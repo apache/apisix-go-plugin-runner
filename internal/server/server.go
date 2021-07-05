@@ -26,6 +26,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/ReneKroon/ttlcache/v2"
 	flatbuffers "github.com/google/flatbuffers/go"
 
 	"github.com/apache/apisix-go-plugin-runner/internal/plugin"
@@ -67,12 +68,17 @@ func readErr(n int, err error, required int) bool {
 
 func writeErr(n int, err error) {
 	if err != nil {
+		// TODO: solve "write: broken pipe" with context
 		log.Errorf("write: %s", err)
 	}
 }
 
 func generateErrorReport(err error) (ty byte, out []byte) {
-	log.Errorf("%s", err)
+	if err == ttlcache.ErrNotFound {
+		log.Warnf("%s", err)
+	} else {
+		log.Errorf("%s", err)
+	}
 
 	ty = RPCError
 	bd := ReportError(err)
@@ -220,13 +226,16 @@ func Run() {
 
 	go func() {
 		for {
+			conn, err := l.Accept()
+
 			select {
 			case <-done:
+				// don't report the "use of closed network connection" error when the server
+				// is exiting.
 				return
 			default:
 			}
 
-			conn, err := l.Accept()
 			if err != nil {
 				log.Errorf("accept: %s", err)
 				continue

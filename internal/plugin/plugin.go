@@ -59,6 +59,8 @@ var (
 )
 
 func RegisterPlugin(name string, pc ParseConfFunc, sv FilterFunc) error {
+	log.Infof("register plugin %s", name)
+
 	if name == "" {
 		return ErrMissingName
 	}

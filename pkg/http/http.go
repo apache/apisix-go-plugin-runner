@@ -26,17 +26,13 @@ import (
 //
 // 1. We need to record any change to the request headers. As the Request.Header
 // is not an interface, there is not way to inject our special tracker.
+//
 // 2. As the author of fasthttp pointed out, "headers are stored in a map[string][]string.
 // So the server must parse all the headers, ...". The official API is suboptimal, which
 // is even worse in our case as it is not a real HTTP server.
 type Request interface {
 	// ID returns the request id
 	ID() uint32
-	// ConfToken returns the token represents the configuration of current route.
-	// Each route have its unique token, so we can use it to distinguish different
-	// route in the same plugin. When the configuration of a route changed, the token
-	// will change too.
-	ConfToken() uint32
 
 	// SrcIP returns the client's IP
 	SrcIP() net.IP
