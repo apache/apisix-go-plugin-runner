@@ -1,0 +1,13 @@
+{
+  "version": 0.1,
+  "sidebar": [
+    {
+      "type": "doc",
+      "id": "getting-started"
+    },
+    {
+      "type": "doc",
+      "id": "developer-guide"
+    }
+  ]
+}
