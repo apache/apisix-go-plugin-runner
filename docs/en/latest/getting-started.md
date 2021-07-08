@@ -149,7 +149,7 @@ The application will listen to `/tmp/runner.sock` when it runs.
 
 First you need to have APISIX on your machine, which needs to be on the same instance as Go Runner.
 
-![runner-overview](docs/assets/images/runner-overview.png)
+![runner-overview](../../assets/images/runner-overview.png)
 
 The diagram above shows the workflow of APISIX on the left, while the plugin runner on the right is responsible for running external plugins written in different languages. apisix-go-plugin-runner is one such runner that supports Go.
 
