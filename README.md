@@ -22,3 +22,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/apache/apisix-go-plugin-runner)](https://goreportcard.com/report/github.com/apache/apisix-go-plugin-runner)
 [![Build Status](https://github.com/apache/apisix-go-plugin-runner/workflows/unit-test-ci/badge.svg?branch=master)](https://github.com/apache/apisix-go-plugin-runner/actions)
 [![Codecov](https://codecov.io/gh/apache/apisix-go-plugin-runner/branch/master/graph/badge.svg)](https://codecov.io/gh/apache/apisix-go-plugin-runner)
+[![Godoc](http://img.shields.io/badge/go-documentation-blue.svg?style=flat-square)](https://pkg.go.dev/github.com/apache/apisix-go-plugin-runner)
+
+The documentation can be found in this [website](http://apisix.apache.org/docs/go-plugin-runner/getting-started),
+which is generated from the files under `docs/`.
