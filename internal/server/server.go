@@ -223,7 +223,7 @@ func Run() {
 	}
 	defer l.Close()
 
-	// the default socket permission is 0755, which pervents the 'nobody' worker process
+	// the default socket permission is 0755, which prevents the 'nobody' worker process
 	// from writing to it if the APISIX is run under root.
 	err = os.Chmod(sockAddr, 0766)
 	if err != nil {
