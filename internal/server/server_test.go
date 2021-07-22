@@ -77,6 +77,10 @@ func TestRun(t *testing.T) {
 	}()
 
 	time.Sleep(100 * time.Millisecond)
+
+	stat, err := os.Stat(path)
+	assert.True(t, stat.Mode().Perm() == 0766)
+
 	header := make([]byte, 4)
 	binary.BigEndian.PutUint32(header, uint32(32))
 	header[0] = 1
@@ -103,6 +107,6 @@ func TestRun(t *testing.T) {
 	syscall.Kill(syscall.Getpid(), syscall.SIGINT)
 	time.Sleep(10 * time.Millisecond)
 
-	_, err := os.Stat(path)
+	_, err = os.Stat(path)
 	assert.True(t, os.IsNotExist(err))
 }
