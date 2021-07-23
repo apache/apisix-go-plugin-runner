@@ -223,6 +223,13 @@ func Run() {
 	}
 	defer l.Close()
 
+	// the default socket permission is 0755, which prevents the 'nobody' worker process
+	// from writing to it if the APISIX is run under root.
+	err = os.Chmod(sockAddr, 0766)
+	if err != nil {
+		log.Fatalf("can't change mod for file %s: %s", sockAddr, err)
+	}
+
 	done := make(chan struct{})
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
