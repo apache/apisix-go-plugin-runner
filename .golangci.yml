@@ -28,7 +28,6 @@ linters:
     - goimports
     - gosimple
     - ineffassign
-    - misspell
     - staticcheck
     - structcheck
     - unconvert
