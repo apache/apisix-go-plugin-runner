@@ -20,6 +20,7 @@ package plugin
 import (
 	"errors"
 	"sort"
+	"strconv"
 	"sync"
 	"testing"
 	"time"
@@ -104,7 +105,7 @@ func TestPrepareConfBadConf(t *testing.T) {
 	assert.Equal(t, 0, len(res))
 }
 
-func TestPrepareConfConcurrently(t *testing.T) {
+func TestPrepareConfConcurrentlyWithoutKey(t *testing.T) {
 	InitConfCache(10 * time.Millisecond)
 
 	builder := flatbuffers.NewBuilder(1024)
@@ -119,6 +120,83 @@ func TestPrepareConfConcurrently(t *testing.T) {
 	for i := 0; i < n; i++ {
 		wg.Add(1)
 		go func(i int) {
+			bd, err := PrepareConf(b)
+			assert.Nil(t, err)
+			res[i] = bd.FinishedBytes()[:]
+			wg.Done()
+		}(i)
+	}
+	wg.Wait()
+
+	tokens := make([]int, n)
+	for i := 0; i < n; i++ {
+		resp := pc.GetRootAsResp(res[i], 0)
+		tokens[i] = int(resp.ConfToken())
+	}
+
+	sort.Ints(tokens)
+	for i := 0; i < n; i++ {
+		assert.Equal(t, i+1, tokens[i])
+	}
+}
+
+func TestPrepareConfConcurrentlyWithTheSameKey(t *testing.T) {
+	InitConfCache(10 * time.Millisecond)
+
+	builder := flatbuffers.NewBuilder(1024)
+	key := builder.CreateString("key")
+	pc.ReqStart(builder)
+	pc.ReqAddKey(builder, key)
+	root := pc.ReqEnd(builder)
+	builder.Finish(root)
+	b := builder.FinishedBytes()
+
+	n := 10
+	var wg sync.WaitGroup
+	res := make([][]byte, n)
+	for i := 0; i < n; i++ {
+		wg.Add(1)
+		go func(i int) {
+			bd, err := PrepareConf(b)
+			assert.Nil(t, err)
+			res[i] = bd.FinishedBytes()[:]
+			wg.Done()
+		}(i)
+	}
+	wg.Wait()
+
+	tokens := make([]int, n)
+	for i := 0; i < n; i++ {
+		resp := pc.GetRootAsResp(res[i], 0)
+		tokens[i] = int(resp.ConfToken())
+	}
+
+	sort.Ints(tokens)
+	for i := 0; i < n; i++ {
+		assert.Equal(t, 1, tokens[i])
+	}
+}
+
+func TestPrepareConfConcurrentlyWithTheDifferentKey(t *testing.T) {
+	InitConfCache(10 * time.Millisecond)
+
+	builder := flatbuffers.NewBuilder(1024)
+	n := 10
+	var wg sync.WaitGroup
+	var lock sync.Mutex
+	res := make([][]byte, n)
+	for i := 0; i < n; i++ {
+		wg.Add(1)
+		go func(i int) {
+			lock.Lock()
+			key := builder.CreateString(strconv.Itoa(i))
+			pc.ReqStart(builder)
+			pc.ReqAddKey(builder, key)
+			root := pc.ReqEnd(builder)
+			builder.Finish(root)
+			b := builder.FinishedBytes()
+			lock.Unlock()
+
 			bd, err := PrepareConf(b)
 			assert.Nil(t, err)
 			res[i] = bd.FinishedBytes()[:]
