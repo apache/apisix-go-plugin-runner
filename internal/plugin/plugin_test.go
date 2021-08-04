@@ -43,7 +43,7 @@ var (
 
 func TestHTTPReqCall(t *testing.T) {
 	InitConfCache(10 * time.Millisecond)
-	SetRuleConf(1, RuleConf{})
+	SetRuleConfInTest(1, RuleConf{})
 
 	builder := flatbuffers.NewBuilder(1024)
 	hrc.ReqStart(builder)
