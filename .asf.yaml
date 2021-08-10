@@ -22,6 +22,12 @@ github:
     - go
     - gateway
     - plugin
+  protected_branches:
+  # All protected branches in the YAML must be dictionary entries.
+  # Thus, if you only want to disable force push from a branch,
+  # you can construct a fake dictionary
+  master:
+    foo: bar
   enabled_merge_buttons:
     squash:  true
     merge:   false
