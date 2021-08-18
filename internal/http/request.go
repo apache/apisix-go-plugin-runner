@@ -18,21 +18,30 @@
 package http
 
 import (
+	"encoding/binary"
 	"net"
 	"net/http"
 	"net/url"
 	"reflect"
 	"sync"
 
-	pkgHTTP "github.com/apache/apisix-go-plugin-runner/pkg/http"
 	"github.com/api7/ext-plugin-proto/go/A6"
+	ei "github.com/api7/ext-plugin-proto/go/A6/ExtraInfo"
 	hrc "github.com/api7/ext-plugin-proto/go/A6/HTTPReqCall"
 	flatbuffers "github.com/google/flatbuffers/go"
+
+	"github.com/apache/apisix-go-plugin-runner/internal/util"
+	"github.com/apache/apisix-go-plugin-runner/pkg/common"
+	pkgHTTP "github.com/apache/apisix-go-plugin-runner/pkg/http"
+	"github.com/apache/apisix-go-plugin-runner/pkg/log"
 )
 
 type Request struct {
 	// the root of the flatbuffers HTTPReqCall Request msg
 	r *hrc.Req
+
+	conn            net.Conn
+	extraInfoHeader []byte
 
 	path []byte
 
@@ -41,6 +50,8 @@ type Request struct {
 
 	args    url.Values
 	rawArgs url.Values
+
+	vars map[string][]byte
 }
 
 func (r *Request) ConfToken() uint32 {
@@ -118,10 +129,44 @@ func (r *Request) Args() url.Values {
 	return r.args
 }
 
+func (r *Request) Var(name string) ([]byte, error) {
+	if r.vars == nil {
+		r.vars = map[string][]byte{}
+	}
+
+	var v []byte
+	var found bool
+
+	if v, found = r.vars[name]; !found {
+		var err error
+
+		builder := util.GetBuilder()
+		varName := builder.CreateString(name)
+		ei.VarStart(builder)
+		ei.VarAddName(builder, varName)
+		varInfo := ei.VarEnd(builder)
+		v, err = r.askExtraInfo(builder, ei.InfoVar, varInfo)
+		util.PutBuilder(builder)
+
+		if err != nil {
+			return nil, err
+		}
+
+		r.vars[name] = v
+	}
+	return v, nil
+}
+
 func (r *Request) Reset() {
 	r.path = nil
 	r.hdr = nil
 	r.args = nil
+
+	r.vars = nil
+	r.conn = nil
+
+	// Keep the fields below
+	// r.extraInfoHeader = nil
 }
 
 func (r *Request) FetchChanges(id uint32, builder *flatbuffers.Builder) bool {
@@ -228,6 +273,64 @@ func (r *Request) FetchChanges(id uint32, builder *flatbuffers.Builder) bool {
 	builder.Finish(res)
 
 	return true
+}
+
+func (r *Request) BindConn(c net.Conn) {
+	r.conn = c
+}
+
+func (r *Request) askExtraInfo(builder *flatbuffers.Builder,
+	infoType ei.Info, info flatbuffers.UOffsetT) ([]byte, error) {
+
+	ei.ReqStart(builder)
+	ei.ReqAddInfoType(builder, infoType)
+	ei.ReqAddInfo(builder, info)
+	eiRes := ei.ReqEnd(builder)
+	builder.Finish(eiRes)
+
+	c := r.conn
+	if len(r.extraInfoHeader) == 0 {
+		r.extraInfoHeader = make([]byte, util.HeaderLen)
+	}
+	header := r.extraInfoHeader
+
+	out := builder.FinishedBytes()
+	size := len(out)
+	binary.BigEndian.PutUint32(header, uint32(size))
+	header[0] = util.RPCExtraInfo
+
+	n, err := c.Write(header)
+	if err != nil {
+		util.WriteErr(n, err)
+		return nil, common.ErrConnClosed
+	}
+
+	n, err = c.Write(out)
+	if err != nil {
+		util.WriteErr(n, err)
+		return nil, common.ErrConnClosed
+	}
+
+	n, err = c.Read(header)
+	if util.ReadErr(n, err, util.HeaderLen) {
+		return nil, common.ErrConnClosed
+	}
+
+	ty := header[0]
+	header[0] = 0
+	length := binary.BigEndian.Uint32(header)
+
+	log.Infof("receive rpc type: %d data length: %d", ty, length)
+
+	buf := make([]byte, length)
+	n, err = c.Read(buf)
+	if util.ReadErr(n, err, int(length)) {
+		return nil, common.ErrConnClosed
+	}
+
+	resp := ei.GetRootAsResp(buf, 0)
+	res := resp.ResultBytes()
+	return res, nil
 }
 
 var reqPool = sync.Pool{

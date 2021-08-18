@@ -42,14 +42,14 @@ func TestGetSockAddr(t *testing.T) {
 }
 
 func TestDispatchRPC_UnknownType(t *testing.T) {
-	ty, _ := dispatchRPC(126, []byte(""))
-	assert.Equal(t, byte(RPCError), ty)
+	ty, _ := dispatchRPC(126, []byte(""), nil)
+	assert.Equal(t, byte(util.RPCError), ty)
 }
 
 func TestDispatchRPC_OutTooLarge(t *testing.T) {
 	dealRPCTest = func(buf []byte) (*flatbuffers.Builder, error) {
 		builder := util.GetBuilder()
-		bodyVec := builder.CreateByteVector(make([]byte, MaxDataSize+1))
+		bodyVec := builder.CreateByteVector(make([]byte, util.MaxDataSize+1))
 		hrc.StopStart(builder)
 		hrc.StopAddBody(builder, bodyVec)
 		stop := hrc.StopEnd(builder)
@@ -62,8 +62,8 @@ func TestDispatchRPC_OutTooLarge(t *testing.T) {
 		builder.Finish(res)
 		return builder, nil
 	}
-	ty, _ := dispatchRPC(RPCTest, []byte(""))
-	assert.Equal(t, byte(RPCError), ty)
+	ty, _ := dispatchRPC(util.RPCTest, []byte(""), nil)
+	assert.Equal(t, byte(util.RPCError), ty)
 }
 
 func TestRun(t *testing.T) {

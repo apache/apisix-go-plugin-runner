@@ -51,6 +51,9 @@ type Request interface {
 	Header() Header
 	// Args returns the query string
 	Args() url.Values
+
+	// Var returns the value of a Nginx variable, like `r.Var("request_time")`
+	Var(name string) ([]byte, error)
 }
 
 // Header is like http.Header, but only implements the subset of its methods

@@ -20,7 +20,6 @@ package server
 import (
 	"encoding/binary"
 	"fmt"
-	"io"
 	"net"
 	"os"
 	"os/signal"
@@ -38,43 +37,13 @@ import (
 )
 
 const (
-	HeaderLen   = 4
-	MaxDataSize = 2<<24 - 1
-
 	SockAddrEnv     = "APISIX_LISTEN_ADDRESS"
 	ConfCacheTTLEnv = "APISIX_CONF_EXPIRE_TIME"
-)
-
-const (
-	RPCError = iota
-	RPCPrepareConf
-	RPCHTTPReqCall
-	RPCTest = 127 // used only in test
 )
 
 var (
 	dealRPCTest func(buf []byte) (*flatbuffers.Builder, error)
 )
-
-func readErr(n int, err error, required int) bool {
-	if 0 < n && n < required {
-		err = fmt.Errorf("truncated, only get the first %d bytes", n)
-	}
-	if err != nil {
-		if err != io.EOF {
-			log.Errorf("read: %s", err)
-		}
-		return true
-	}
-	return false
-}
-
-func writeErr(n int, err error) {
-	if err != nil {
-		// TODO: solve "write: broken pipe" with context
-		log.Errorf("write: %s", err)
-	}
-}
 
 func generateErrorReport(err error) (ty byte, out []byte) {
 	if err == ttlcache.ErrNotFound {
@@ -83,22 +52,28 @@ func generateErrorReport(err error) (ty byte, out []byte) {
 		log.Errorf("%s", err)
 	}
 
-	ty = RPCError
+	ty = util.RPCError
 	bd := ReportError(err)
 	out = bd.FinishedBytes()
 	util.PutBuilder(bd)
 	return
 }
 
-func dispatchRPC(ty byte, in []byte) (byte, []byte) {
+func recoverPanic() {
+	if err := recover(); err != nil {
+		log.Errorf("panic recovered: %s", err)
+	}
+}
+
+func dispatchRPC(ty byte, in []byte, conn net.Conn) (byte, []byte) {
 	var err error
 	var bd *flatbuffers.Builder
 	switch ty {
-	case RPCPrepareConf:
+	case util.RPCPrepareConf:
 		bd, err = plugin.PrepareConf(in)
-	case RPCHTTPReqCall:
-		bd, err = plugin.HTTPReqCall(in)
-	case RPCTest: // Just for test
+	case util.RPCHTTPReqCall:
+		bd, err = plugin.HTTPReqCall(in, conn)
+	case util.RPCTest: // Just for test
 		bd, err = dealRPCTest(in)
 	default:
 		err = UnknownType{ty}
@@ -111,8 +86,8 @@ func dispatchRPC(ty byte, in []byte) (byte, []byte) {
 		out = bd.FinishedBytes()
 		util.PutBuilder(bd)
 		size := len(out)
-		if size > MaxDataSize {
-			err = fmt.Errorf("the max length of data is %d but got %d", MaxDataSize, size)
+		if size > util.MaxDataSize {
+			err = fmt.Errorf("the max length of data is %d but got %d", util.MaxDataSize, size)
 			ty, out = generateErrorReport(err)
 		}
 	}
@@ -121,19 +96,15 @@ func dispatchRPC(ty byte, in []byte) (byte, []byte) {
 }
 
 func handleConn(c net.Conn) {
-	defer func() {
-		if err := recover(); err != nil {
-			log.Errorf("panic recovered: %s", err)
-		}
-	}()
+	defer recoverPanic()
 
 	log.Infof("Client connected (%s)", c.RemoteAddr().Network())
 	defer c.Close()
 
-	header := make([]byte, HeaderLen)
+	header := make([]byte, util.HeaderLen)
 	for {
 		n, err := c.Read(header)
-		if readErr(n, err, HeaderLen) {
+		if util.ReadErr(n, err, util.HeaderLen) {
 			break
 		}
 
@@ -147,11 +118,11 @@ func handleConn(c net.Conn) {
 
 		buf := make([]byte, length)
 		n, err = c.Read(buf)
-		if readErr(n, err, int(length)) {
+		if util.ReadErr(n, err, int(length)) {
 			break
 		}
 
-		ty, out := dispatchRPC(ty, buf)
+		ty, out := dispatchRPC(ty, buf, c)
 
 		size := len(out)
 		binary.BigEndian.PutUint32(header, uint32(size))
@@ -159,13 +130,13 @@ func handleConn(c net.Conn) {
 
 		n, err = c.Write(header)
 		if err != nil {
-			writeErr(n, err)
+			util.WriteErr(n, err)
 			break
 		}
 
 		n, err = c.Write(out)
 		if err != nil {
-			writeErr(n, err)
+			util.WriteErr(n, err)
 			break
 		}
 	}

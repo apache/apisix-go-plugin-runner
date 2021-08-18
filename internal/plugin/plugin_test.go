@@ -53,7 +53,7 @@ func TestHTTPReqCall(t *testing.T) {
 	builder.Finish(r)
 	out := builder.FinishedBytes()
 
-	b, err := HTTPReqCall(out)
+	b, err := HTTPReqCall(out, nil)
 	assert.Nil(t, err)
 
 	out = b.FinishedBytes()
@@ -87,7 +87,7 @@ func TestHTTPReqCall_FailedToParseConf(t *testing.T) {
 	builder.Finish(r)
 	out := builder.FinishedBytes()
 
-	b, err := HTTPReqCall(out)
+	b, err := HTTPReqCall(out, nil)
 	assert.Nil(t, err)
 
 	out = b.FinishedBytes()

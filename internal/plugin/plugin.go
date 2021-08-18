@@ -20,6 +20,7 @@ package plugin
 import (
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"sync"
 
@@ -132,8 +133,9 @@ func reportAction(id uint32, req *inHTTP.Request, resp *inHTTP.Response) *flatbu
 	return builder
 }
 
-func HTTPReqCall(buf []byte) (*flatbuffers.Builder, error) {
+func HTTPReqCall(buf []byte, conn net.Conn) (*flatbuffers.Builder, error) {
 	req := inHTTP.CreateRequest(buf)
+	req.BindConn(conn)
 	defer inHTTP.ReuseRequest(req)
 
 	resp := inHTTP.CreateResponse()
