@@ -173,6 +173,10 @@ func handleConn(c net.Conn) {
 
 func getConfCacheTTL() time.Duration {
 	ttl := os.Getenv(ConfCacheTTLEnv)
+	if ttl == "" {
+		return 3600 * time.Second
+	}
+
 	n, err := strconv.Atoi(ttl)
 	if err != nil || n <= 0 {
 		log.Errorf("invalid cache ttl: %s", ttl)

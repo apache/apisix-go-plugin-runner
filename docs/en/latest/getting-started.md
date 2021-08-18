@@ -132,15 +132,14 @@ We can see that the Filter takes the value of the body set in the configuration 
 
 Here you can read the API documentation provided by the Go Runner SDK: https://pkg.go.dev/github.com/apache/apisix-go-plugin-runner
 
-After building the application (`make build` in the example), we need to set two environment variables at runtime.
+After building the application (`make build` in the example), we need to set some environment variables at runtime:
 
-1. `APISIX_LISTEN_ADDRESS=unix:/tmp/runner.sock`
-2. `APISIX_CONF_EXPIRE_TIME=3600`
+* `APISIX_LISTEN_ADDRESS=unix:/tmp/runner.sock`
 
-Like this.
+Like this:
 
 ```
-APISIX_LISTEN_ADDRESS=unix:/tmp/runner.sock APISIX_CONF_EXPIRE_TIME=3600 ./go-runner run
+APISIX_LISTEN_ADDRESS=unix:/tmp/runner.sock ./go-runner run
 ```
 
 The application will listen to `/tmp/runner.sock` when it runs.
