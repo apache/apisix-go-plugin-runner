@@ -53,6 +53,10 @@ type Request interface {
 	Args() url.Values
 
 	// Var returns the value of a Nginx variable, like `r.Var("request_time")`
+	//
+	// To fetch the value, the runner will look up the request's cache first. If not found,
+	// the runner will ask it from the APISIX. If the RPC call is failed, an error in
+	// pkg/common.ErrConnClosed type is returned.
 	Var(name string) ([]byte, error)
 }
 
