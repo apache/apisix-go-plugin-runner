@@ -41,6 +41,17 @@ func TestGetSockAddr(t *testing.T) {
 	assert.Equal(t, "/tmp/x.sock", getSockAddr())
 }
 
+func TestGetConfCacheTTL(t *testing.T) {
+	os.Unsetenv(ConfCacheTTLEnv)
+	assert.Equal(t, 3600*time.Second, getConfCacheTTL())
+
+	os.Setenv(ConfCacheTTLEnv, "12")
+	assert.Equal(t, 12*time.Second, getConfCacheTTL())
+
+	os.Setenv(ConfCacheTTLEnv, "1a")
+	assert.Equal(t, time.Duration(0), getConfCacheTTL())
+}
+
 func TestDispatchRPC_UnknownType(t *testing.T) {
 	ty, _ := dispatchRPC(126, []byte(""))
 	assert.Equal(t, byte(RPCError), ty)
