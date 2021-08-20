@@ -4,7 +4,7 @@ go 1.15
 
 require (
 	github.com/ReneKroon/ttlcache/v2 v2.4.0
-	github.com/api7/ext-plugin-proto v0.2.1
+	github.com/api7/ext-plugin-proto v0.3.0
 	github.com/google/flatbuffers v2.0.0+incompatible
 	github.com/spf13/cobra v1.1.3
 	github.com/stretchr/testify v1.7.0

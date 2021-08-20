@@ -18,16 +18,20 @@
 package http
 
 import (
+	"encoding/binary"
 	"net"
 	"net/http"
 	"net/url"
 	"testing"
 
-	"github.com/apache/apisix-go-plugin-runner/internal/util"
 	"github.com/api7/ext-plugin-proto/go/A6"
+	ei "github.com/api7/ext-plugin-proto/go/A6/ExtraInfo"
 	hrc "github.com/api7/ext-plugin-proto/go/A6/HTTPReqCall"
 	flatbuffers "github.com/google/flatbuffers/go"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/apache/apisix-go-plugin-runner/internal/util"
+	"github.com/apache/apisix-go-plugin-runner/pkg/common"
 )
 
 func getRewriteAction(t *testing.T, b *flatbuffers.Builder) *hrc.Rewrite {
@@ -39,6 +43,17 @@ func getRewriteAction(t *testing.T, b *flatbuffers.Builder) *hrc.Rewrite {
 		rewrite := &hrc.Rewrite{}
 		rewrite.Init(tab.Bytes, tab.Pos)
 		return rewrite
+	}
+	return nil
+}
+
+func getVarInfo(t *testing.T, req *ei.Req) *ei.Var {
+	tab := &flatbuffers.Table{}
+	if req.Info(tab) {
+		assert.Equal(t, ei.InfoVar, req.InfoType())
+		info := &ei.Var{}
+		info.Init(tab.Bytes, tab.Pos)
+		return info
 	}
 	return nil
 }
@@ -253,4 +268,116 @@ func TestArgs(t *testing.T) {
 	}
 	assert.Equal(t, exp, res)
 	assert.Equal(t, "del", deleted)
+}
+
+func TestVar(t *testing.T) {
+	out := buildReq(reqOpt{})
+	r := CreateRequest(out)
+
+	cc, sc := net.Pipe()
+	r.BindConn(cc)
+
+	go func() {
+		header := make([]byte, util.HeaderLen)
+		n, err := sc.Read(header)
+		if util.ReadErr(n, err, util.HeaderLen) {
+			return
+		}
+
+		ty := header[0]
+		assert.Equal(t, byte(util.RPCExtraInfo), ty)
+		header[0] = 0
+		length := binary.BigEndian.Uint32(header)
+
+		buf := make([]byte, length)
+		n, err = sc.Read(buf)
+		if util.ReadErr(n, err, int(length)) {
+			return
+		}
+
+		req := ei.GetRootAsReq(buf, 0)
+		info := getVarInfo(t, req)
+		assert.Equal(t, "request_time", string(info.Name()))
+
+		builder := util.GetBuilder()
+		res := builder.CreateByteVector([]byte("1.0"))
+		ei.RespStart(builder)
+		ei.RespAddResult(builder, res)
+		eiRes := ei.RespEnd(builder)
+		builder.Finish(eiRes)
+		out := builder.FinishedBytes()
+		size := len(out)
+		binary.BigEndian.PutUint32(header, uint32(size))
+		header[0] = util.RPCExtraInfo
+
+		n, err = sc.Write(header)
+		if err != nil {
+			util.WriteErr(n, err)
+			return
+		}
+
+		n, err = sc.Write(out)
+		if err != nil {
+			util.WriteErr(n, err)
+			return
+		}
+	}()
+
+	for i := 0; i < 2; i++ {
+		v, err := r.Var("request_time")
+		assert.Nil(t, err)
+		assert.Equal(t, "1.0", string(v))
+	}
+}
+
+func TestVar_FailedToSendExtraInfoReq(t *testing.T) {
+	out := buildReq(reqOpt{})
+	r := CreateRequest(out)
+
+	cc, sc := net.Pipe()
+	r.BindConn(cc)
+
+	go func() {
+		header := make([]byte, util.HeaderLen)
+		n, err := sc.Read(header)
+		if util.ReadErr(n, err, util.HeaderLen) {
+			return
+		}
+		sc.Close()
+	}()
+
+	_, err := r.Var("request_time")
+	assert.Equal(t, common.ErrConnClosed, err)
+}
+
+func TestVar_FailedToReadExtraInfoResp(t *testing.T) {
+	out := buildReq(reqOpt{})
+	r := CreateRequest(out)
+
+	cc, sc := net.Pipe()
+	r.BindConn(cc)
+
+	go func() {
+		header := make([]byte, util.HeaderLen)
+		n, err := sc.Read(header)
+		if util.ReadErr(n, err, util.HeaderLen) {
+			return
+		}
+
+		ty := header[0]
+		assert.Equal(t, byte(util.RPCExtraInfo), ty)
+		header[0] = 0
+		length := binary.BigEndian.Uint32(header)
+
+		buf := make([]byte, length)
+		n, err = sc.Read(buf)
+		if util.ReadErr(n, err, int(length)) {
+			return
+		}
+
+		sc.Close()
+	}()
+
+	_, err := r.Var("request_time")
+	assert.Equal(t, common.ErrConnClosed, err)
 }
