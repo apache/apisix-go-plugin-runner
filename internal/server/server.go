@@ -45,18 +45,14 @@ var (
 	dealRPCTest func(buf []byte) (*flatbuffers.Builder, error)
 )
 
-func generateErrorReport(err error) (ty byte, out []byte) {
+func generateErrorReport(err error) *flatbuffers.Builder {
 	if err == ttlcache.ErrNotFound {
 		log.Warnf("%s", err)
 	} else {
 		log.Errorf("%s", err)
 	}
 
-	ty = util.RPCError
-	bd := ReportError(err)
-	out = bd.FinishedBytes()
-	util.PutBuilder(bd)
-	return
+	return ReportError(err)
 }
 
 func recoverPanic() {
@@ -65,7 +61,7 @@ func recoverPanic() {
 	}
 }
 
-func dispatchRPC(ty byte, in []byte, conn net.Conn) (byte, []byte) {
+func dispatchRPC(ty byte, in []byte, conn net.Conn) (*flatbuffers.Builder, error) {
 	var err error
 	var bd *flatbuffers.Builder
 	switch ty {
@@ -78,21 +74,18 @@ func dispatchRPC(ty byte, in []byte, conn net.Conn) (byte, []byte) {
 	default:
 		err = UnknownType{ty}
 	}
+	return bd, err
+}
 
-	var out []byte
-	if err != nil {
-		ty, out = generateErrorReport(err)
-	} else {
-		out = bd.FinishedBytes()
+func checkIfDataTooLarge(bd *flatbuffers.Builder) *flatbuffers.Builder {
+	out := bd.FinishedBytes()
+	size := len(out)
+	if size > util.MaxDataSize {
+		err := fmt.Errorf("the max length of data is %d but got %d", util.MaxDataSize, size)
 		util.PutBuilder(bd)
-		size := len(out)
-		if size > util.MaxDataSize {
-			err = fmt.Errorf("the max length of data is %d but got %d", util.MaxDataSize, size)
-			ty, out = generateErrorReport(err)
-		}
+		bd = generateErrorReport(err)
 	}
-
-	return ty, out
+	return bd
 }
 
 func handleConn(c net.Conn) {
@@ -122,8 +115,16 @@ func handleConn(c net.Conn) {
 			break
 		}
 
-		ty, out := dispatchRPC(ty, buf, c)
+		bd, err := dispatchRPC(ty, buf, c)
 
+		if err != nil {
+			util.PutBuilder(bd)
+			bd = generateErrorReport(err)
+		} else {
+			bd = checkIfDataTooLarge(bd)
+		}
+
+		out := bd.FinishedBytes()
 		size := len(out)
 		binary.BigEndian.PutUint32(header, uint32(size))
 		header[0] = ty
@@ -139,6 +140,8 @@ func handleConn(c net.Conn) {
 			util.WriteErr(n, err)
 			break
 		}
+
+		util.PutBuilder(bd)
 	}
 }
 

@@ -27,7 +27,6 @@ import (
 	"time"
 
 	hrc "github.com/api7/ext-plugin-proto/go/A6/HTTPReqCall"
-	flatbuffers "github.com/google/flatbuffers/go"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/apache/apisix-go-plugin-runner/internal/util"
@@ -53,28 +52,23 @@ func TestGetConfCacheTTL(t *testing.T) {
 }
 
 func TestDispatchRPC_UnknownType(t *testing.T) {
-	ty, _ := dispatchRPC(126, []byte(""), nil)
-	assert.Equal(t, byte(util.RPCError), ty)
+	_, err := dispatchRPC(126, []byte(""), nil)
+	assert.Equal(t, UnknownType{126}, err)
 }
 
 func TestDispatchRPC_OutTooLarge(t *testing.T) {
-	dealRPCTest = func(buf []byte) (*flatbuffers.Builder, error) {
-		builder := util.GetBuilder()
-		bodyVec := builder.CreateByteVector(make([]byte, util.MaxDataSize+1))
-		hrc.StopStart(builder)
-		hrc.StopAddBody(builder, bodyVec)
-		stop := hrc.StopEnd(builder)
+	builder := util.GetBuilder()
+	bodyVec := builder.CreateByteVector(make([]byte, util.MaxDataSize+1))
+	hrc.StopStart(builder)
+	hrc.StopAddBody(builder, bodyVec)
+	stop := hrc.StopEnd(builder)
 
-		hrc.RespStart(builder)
-		hrc.RespAddId(builder, 1)
-		hrc.RespAddActionType(builder, hrc.ActionStop)
-		hrc.RespAddAction(builder, stop)
-		res := hrc.RespEnd(builder)
-		builder.Finish(res)
-		return builder, nil
-	}
-	ty, _ := dispatchRPC(util.RPCTest, []byte(""), nil)
-	assert.Equal(t, byte(util.RPCError), ty)
+	hrc.RespStart(builder)
+	hrc.RespAddId(builder, 1)
+	hrc.RespAddActionType(builder, hrc.ActionStop)
+	hrc.RespAddAction(builder, stop)
+	res := hrc.RespEnd(builder)
+	builder.Finish(res)
 }
 
 func TestRun(t *testing.T) {
