@@ -24,7 +24,7 @@ title: Getting started
 ## Prerequisites
 
 * Go (>= 1.15)
-* APISIX (>= 2.7.0)
+* APISIX (>= 2.9.0)
 
 ## Installation
 
