@@ -27,7 +27,7 @@ This documentation explains how to develop this project.
 
 ## Build
 
-Run `make build`. Then you can run `APISIX_LISTEN_ADDRESS=unix:/tmp/runner.sock APISIX_CONF_EXPIRE_TIME=3600 ./go-runner run`
+Run `make build`. Then you can run `APISIX_LISTEN_ADDRESS=unix:/tmp/runner.sock ./go-runner run`
 to start it.
 
 ## Test
