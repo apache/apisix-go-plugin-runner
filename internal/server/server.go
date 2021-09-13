@@ -41,8 +41,17 @@ const (
 	ConfCacheTTLEnv = "APISIX_CONF_EXPIRE_TIME"
 )
 
+type handler func(buf []byte, conn net.Conn) (*flatbuffers.Builder, error)
+
 var (
-	dealRPCTest func(buf []byte) (*flatbuffers.Builder, error)
+	typeHandlerMap = map[byte]handler{
+		util.RPCPrepareConf: func(buf []byte, conn net.Conn) (*flatbuffers.Builder, error) {
+			return plugin.PrepareConf(buf)
+		},
+		util.RPCHTTPReqCall: func(buf []byte, conn net.Conn) (*flatbuffers.Builder, error) {
+			return plugin.HTTPReqCall(buf, conn)
+		},
+	}
 )
 
 func generateErrorReport(err error) *flatbuffers.Builder {
@@ -62,19 +71,11 @@ func recoverPanic() {
 }
 
 func dispatchRPC(ty byte, in []byte, conn net.Conn) (*flatbuffers.Builder, error) {
-	var err error
-	var bd *flatbuffers.Builder
-	switch ty {
-	case util.RPCPrepareConf:
-		bd, err = plugin.PrepareConf(in)
-	case util.RPCHTTPReqCall:
-		bd, err = plugin.HTTPReqCall(in, conn)
-	case util.RPCTest: // Just for test
-		bd, err = dealRPCTest(in)
-	default:
-		err = UnknownType{ty}
+	hl, ok := typeHandlerMap[ty]
+	if !ok {
+		return nil, UnknownType{ty}
 	}
-	return bd, err
+	return hl(in, conn)
 }
 
 func checkIfDataTooLarge(bd *flatbuffers.Builder) *flatbuffers.Builder {

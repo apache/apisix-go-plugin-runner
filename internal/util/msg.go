@@ -36,7 +36,6 @@ const (
 	RPCPrepareConf
 	RPCHTTPReqCall
 	RPCExtraInfo
-	RPCTest = 127 // used only in test
 )
 
 type RPCResult struct {
