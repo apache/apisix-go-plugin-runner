@@ -53,3 +53,15 @@ jobs:
               echo $diffs
               exit 1
           fi
+
+      - name: run goimports
+        working-directory: ./
+        run: |
+          go get golang.org/x/tools/cmd/goimports
+          export PATH=$PATH:$(go env GOPATH)/bin/
+          diffs=`goimports -d .`
+          if [[ -n $diffs ]]; then
+              echo "Files are not formatted by goimport:"
+              echo $diffs
+              exit 1
+          fi
