@@ -52,8 +52,10 @@ func TestGetConfCacheTTL(t *testing.T) {
 }
 
 func TestDispatchRPC_UnknownType(t *testing.T) {
-	_, err := dispatchRPC(126, []byte(""), nil)
-	assert.Equal(t, UnknownType{126}, err)
+	bd := dispatchRPC(126, []byte(""), nil)
+	err := UnknownType{126}
+	expectBd := ReportError(err)
+	assert.Equal(t, expectBd.FinishedBytes(), bd.FinishedBytes())
 }
 
 func TestDispatchRPC_OutTooLarge(t *testing.T) {
