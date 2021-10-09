@@ -70,12 +70,22 @@ func recoverPanic() {
 	}
 }
 
-func dispatchRPC(ty byte, in []byte, conn net.Conn) (*flatbuffers.Builder, error) {
+func dispatchRPC(ty byte, in []byte, conn net.Conn) *flatbuffers.Builder {
+	var err error
+	var bd *flatbuffers.Builder
 	hl, ok := typeHandlerMap[ty]
 	if !ok {
-		return nil, UnknownType{ty}
+		err = UnknownType{ty}
+	} else {
+		bd, err = hl(in, conn)
 	}
-	return hl(in, conn)
+
+	if err != nil {
+		bd = generateErrorReport(err)
+	} else {
+		bd = checkIfDataTooLarge(bd)
+	}
+	return bd
 }
 
 func checkIfDataTooLarge(bd *flatbuffers.Builder) *flatbuffers.Builder {
@@ -116,15 +126,7 @@ func handleConn(c net.Conn) {
 			break
 		}
 
-		bd, err := dispatchRPC(ty, buf, c)
-
-		if err != nil {
-			util.PutBuilder(bd)
-			bd = generateErrorReport(err)
-		} else {
-			bd = checkIfDataTooLarge(bd)
-		}
-
+		bd := dispatchRPC(ty, buf, c)
 		out := bd.FinishedBytes()
 		size := len(out)
 		binary.BigEndian.PutUint32(header, uint32(size))
