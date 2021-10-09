@@ -149,9 +149,11 @@ func handleConn(c net.Conn) {
 }
 
 func getConfCacheTTL() time.Duration {
+	// ensure the conf cached in the runner expires after the token in APISIX
+	amplificationFactor := 1.2
 	ttl := os.Getenv(ConfCacheTTLEnv)
 	if ttl == "" {
-		return 3600 * time.Second
+		return time.Duration(3600*amplificationFactor) * time.Second
 	}
 
 	n, err := strconv.Atoi(ttl)
@@ -159,7 +161,7 @@ func getConfCacheTTL() time.Duration {
 		log.Errorf("invalid cache ttl: %s", ttl)
 		return 0
 	}
-	return time.Duration(n) * time.Second
+	return time.Duration(float64(n)*amplificationFactor) * time.Second
 }
 
 func getSockAddr() string {
