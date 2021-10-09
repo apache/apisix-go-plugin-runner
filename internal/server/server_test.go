@@ -42,10 +42,10 @@ func TestGetSockAddr(t *testing.T) {
 
 func TestGetConfCacheTTL(t *testing.T) {
 	os.Unsetenv(ConfCacheTTLEnv)
-	assert.Equal(t, 3600*time.Second, getConfCacheTTL())
+	assert.Equal(t, 4320*time.Second, getConfCacheTTL())
 
 	os.Setenv(ConfCacheTTLEnv, "12")
-	assert.Equal(t, 12*time.Second, getConfCacheTTL())
+	assert.Equal(t, 14*time.Second, getConfCacheTTL())
 
 	os.Setenv(ConfCacheTTLEnv, "1a")
 	assert.Equal(t, time.Duration(0), getConfCacheTTL())
