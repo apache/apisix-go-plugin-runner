@@ -19,7 +19,7 @@ default: help
 VERSION ?= latest
 RELEASE_SRC = apisix-go-plugin-runner-${VERSION}-src
 
-GITSHA ?= $(shell git rev-parse --short=7 HEAD 2> /dev/null | echo '')
+GITSHA ?= $(shell git rev-parse --short=7 HEAD 2> /dev/null || echo '')
 OSNAME ?= $(shell uname -s | tr A-Z a-z)
 OSARCH ?= $(shell uname -m | tr A-Z a-z)
 PWD ?= $(shell pwd)
