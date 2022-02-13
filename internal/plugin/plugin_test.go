@@ -289,6 +289,7 @@ func TestFilter(t *testing.T) {
 	}
 	fooFilter := func(conf interface{}, w http.ResponseWriter, r pkgHTTP.Request) {
 		w.Header().Add("foo", "bar")
+		w.WriteHeader(200)
 		assert.Equal(t, "foo", conf.(string))
 	}
 	barParseConf := func(in []byte) (conf interface{}, err error) {
@@ -332,4 +333,45 @@ func TestFilter(t *testing.T) {
 
 	assert.Equal(t, "bar", resp.Header().Get("foo"))
 	assert.Equal(t, "bar", req.Header().Get("foo"))
+}
+
+func TestFilter_SetRespHeaderDoNotBreakReq(t *testing.T) {
+	InitConfCache(1 * time.Millisecond)
+
+	barParseConf := func(in []byte) (conf interface{}, err error) {
+		return "", nil
+	}
+	barFilter := func(conf interface{}, w http.ResponseWriter, r pkgHTTP.Request) {
+		r.Header().Set("foo", "bar")
+	}
+	filterSetRespParseConf := func(in []byte) (conf interface{}, err error) {
+		return "", nil
+	}
+	filterSetRespFilter := func(conf interface{}, w http.ResponseWriter, r pkgHTTP.Request) {
+		w.Header().Add("foo", "baz")
+	}
+	RegisterPlugin("bar", barParseConf, barFilter)
+	RegisterPlugin("filterSetResp", filterSetRespParseConf, filterSetRespFilter)
+
+	builder := flatbuffers.NewBuilder(1024)
+	barName := builder.CreateString("bar")
+	barConf := builder.CreateString("a")
+	filterSetRespName := builder.CreateString("filterSetResp")
+	filterSetRespConf := builder.CreateString("a")
+	prepareConfWithData(builder, filterSetRespName, filterSetRespConf, barName, barConf)
+
+	res, _ := GetRuleConf(1)
+	hrc.ReqStart(builder)
+	hrc.ReqAddId(builder, 233)
+	hrc.ReqAddConfToken(builder, 1)
+	r := hrc.ReqEnd(builder)
+	builder.Finish(r)
+	out := builder.FinishedBytes()
+
+	req := inHTTP.CreateRequest(out)
+	resp := inHTTP.CreateResponse()
+	filter(res, resp, req)
+
+	assert.Equal(t, "bar", req.Header().Get("foo"))
+	assert.Equal(t, "baz", resp.Header().Get("foo"))
 }

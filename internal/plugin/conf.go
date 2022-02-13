@@ -101,8 +101,8 @@ func (cc *ConfCache) Set(req *pc.Req) (uint32, error) {
 			conf, err := plugin.ParseConf(v)
 			if err != nil {
 				log.Errorf(
-					"failed to parse configuration for plugin %s, configuration: %s",
-					name, string(v))
+					"failed to parse configuration for plugin %s, configuration: %s, err: %v",
+					name, string(v), err)
 				continue
 			}
 
