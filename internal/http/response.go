@@ -45,6 +45,8 @@ func (r *Response) Write(b []byte) (int, error) {
 		r.body = &bytes.Buffer{}
 	}
 
+	// APISIX will convert code 0 to 200, so we don't need to WriteHeader(http.StatusOK)
+	// before writing the data
 	return r.body.Write(b)
 }
 
@@ -64,7 +66,7 @@ func (r *Response) Reset() {
 }
 
 func (r *Response) HasChange() bool {
-	return !(r.body == nil && r.code == 0 && len(r.hdr) == 0)
+	return !(r.body == nil && r.code == 0)
 }
 
 func (r *Response) FetchChanges(id uint32, builder *flatbuffers.Builder) bool {
