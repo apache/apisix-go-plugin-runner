@@ -20,15 +20,17 @@ package http
 import (
 	"context"
 	"encoding/binary"
-	"github.com/api7/ext-plugin-proto/go/A6"
-	ei "github.com/api7/ext-plugin-proto/go/A6/ExtraInfo"
-	hrc "github.com/api7/ext-plugin-proto/go/A6/HTTPReqCall"
-	flatbuffers "github.com/google/flatbuffers/go"
 	"net"
 	"net/http"
 	"net/url"
 	"reflect"
 	"sync"
+	"time"
+
+	"github.com/api7/ext-plugin-proto/go/A6"
+	ei "github.com/api7/ext-plugin-proto/go/A6/ExtraInfo"
+	hrc "github.com/api7/ext-plugin-proto/go/A6/HTTPReqCall"
+	flatbuffers "github.com/google/flatbuffers/go"
 
 	"github.com/apache/apisix-go-plugin-runner/internal/util"
 	"github.com/apache/apisix-go-plugin-runner/pkg/common"
@@ -54,24 +56,6 @@ type Request struct {
 	vars map[string][]byte
 
 	ctx context.Context
-}
-
-func (r *Request) Context() context.Context {
-	if r.ctx != nil {
-		return r.ctx
-	}
-	return context.Background()
-}
-
-func (r *Request) WithContext(ctx context.Context) *Request {
-	if ctx == nil {
-		panic("nil context")
-	}
-	r2 := new(Request)
-	*r2 = *r
-	r2.ctx = ctx
-
-	return r2
 }
 
 func (r *Request) ConfToken() uint32 {
@@ -299,6 +283,13 @@ func (r *Request) BindConn(c net.Conn) {
 	r.conn = c
 }
 
+func (r *Request) Context() context.Context {
+	if r.ctx != nil {
+		return r.ctx
+	}
+	return context.Background()
+}
+
 func (r *Request) askExtraInfo(builder *flatbuffers.Builder,
 	infoType ei.Info, info flatbuffers.UOffsetT) ([]byte, error) {
 
@@ -362,6 +353,10 @@ var reqPool = sync.Pool{
 func CreateRequest(buf []byte) *Request {
 	req := reqPool.Get().(*Request)
 	req.r = hrc.GetRootAsReq(buf, 0)
+	// because apisix has an implicit 60s timeout, so set the timeout to 56 seconds(smaller than 60s)
+	// so plugin writer can still break the execution with a custom response before the apisix implicit timeout.
+	ctx, _ := context.WithTimeout(context.Background(), 56*time.Second)
+	req.ctx = ctx
 	return req
 }
 

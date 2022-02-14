@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"net/url"
 	"testing"
+	"time"
 
 	"github.com/api7/ext-plugin-proto/go/A6"
 	ei "github.com/api7/ext-plugin-proto/go/A6/ExtraInfo"
@@ -380,4 +381,16 @@ func TestVar_FailedToReadExtraInfoResp(t *testing.T) {
 
 	_, err := r.Var("request_time")
 	assert.Equal(t, common.ErrConnClosed, err)
+}
+
+func TestContext(t *testing.T) {
+	out := buildReq(reqOpt{})
+	r := CreateRequest(out)
+	timer, ok := r.Context().Deadline()
+	deadlineTime := time.Now().Second() + 56
+
+	assert.True(t, ok)
+	assert.Equal(t, timer.Second(), deadlineTime)
+	ReuseRequest(r)
+	assert.Equal(t, timer.Second(), deadlineTime)
 }

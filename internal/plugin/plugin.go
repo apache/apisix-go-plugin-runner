@@ -18,16 +18,13 @@
 package plugin
 
 import (
-	"context"
 	"errors"
 	"fmt"
+	hrc "github.com/api7/ext-plugin-proto/go/A6/HTTPReqCall"
+	flatbuffers "github.com/google/flatbuffers/go"
 	"net"
 	"net/http"
 	"sync"
-	"time"
-
-	hrc "github.com/api7/ext-plugin-proto/go/A6/HTTPReqCall"
-	flatbuffers "github.com/google/flatbuffers/go"
 
 	inHTTP "github.com/apache/apisix-go-plugin-runner/internal/http"
 	"github.com/apache/apisix-go-plugin-runner/internal/util"
@@ -136,9 +133,7 @@ func reportAction(id uint32, req *inHTTP.Request, resp *inHTTP.Response) *flatbu
 }
 
 func HTTPReqCall(buf []byte, conn net.Conn) (*flatbuffers.Builder, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 56*time.Second)
-	defer cancel()
-	req := inHTTP.CreateRequest(buf).WithContext(ctx)
+	req := inHTTP.CreateRequest(buf)
 	req.BindConn(conn)
 	defer inHTTP.ReuseRequest(req)
 
