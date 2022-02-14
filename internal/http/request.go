@@ -56,6 +56,7 @@ type Request struct {
 	vars map[string][]byte
 
 	ctx context.Context
+	cancel context.CancelFunc
 }
 
 func (r *Request) ConfToken() uint32 {
@@ -162,6 +163,7 @@ func (r *Request) Var(name string) ([]byte, error) {
 }
 
 func (r *Request) Reset() {
+	defer r.cancel()
 	r.path = nil
 	r.hdr = nil
 	r.args = nil
@@ -356,8 +358,9 @@ func CreateRequest(buf []byte) *Request {
 	req.r = hrc.GetRootAsReq(buf, 0)
 	// because apisix has an implicit 60s timeout, so set the timeout to 56 seconds(smaller than 60s)
 	// so plugin writer can still break the execution with a custom response before the apisix implicit timeout.
-	ctx, _ := context.WithTimeout(context.Background(), 56*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 56*time.Second)
 	req.ctx = ctx
+	req.cancel = cancel
 	return req
 }
 
