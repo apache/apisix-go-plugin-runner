@@ -168,6 +168,7 @@ func (r *Request) Reset() {
 
 	r.vars = nil
 	r.conn = nil
+	r.ctx = nil
 
 	// Keep the fields below
 	// r.extraInfoHeader = nil

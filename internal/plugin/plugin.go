@@ -20,11 +20,12 @@ package plugin
 import (
 	"errors"
 	"fmt"
-	hrc "github.com/api7/ext-plugin-proto/go/A6/HTTPReqCall"
-	flatbuffers "github.com/google/flatbuffers/go"
 	"net"
 	"net/http"
 	"sync"
+
+	hrc "github.com/api7/ext-plugin-proto/go/A6/HTTPReqCall"
+	flatbuffers "github.com/google/flatbuffers/go"
 
 	inHTTP "github.com/apache/apisix-go-plugin-runner/internal/http"
 	"github.com/apache/apisix-go-plugin-runner/internal/util"
