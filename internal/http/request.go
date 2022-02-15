@@ -55,7 +55,7 @@ type Request struct {
 
 	vars map[string][]byte
 
-	ctx context.Context
+	ctx    context.Context
 	cancel context.CancelFunc
 }
 

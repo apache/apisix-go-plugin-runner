@@ -19,6 +19,7 @@ package http
 
 import (
 	"encoding/binary"
+	"fmt"
 	"net"
 	"net/http"
 	"net/url"
@@ -385,12 +386,15 @@ func TestVar_FailedToReadExtraInfoResp(t *testing.T) {
 
 func TestContext(t *testing.T) {
 	out := buildReq(reqOpt{})
+	now := time.Now()
+	m, _ := time.ParseDuration("56s")
+	m1 := now.Add(m)
 	r := CreateRequest(out)
 	timer, ok := r.Context().Deadline()
-	deadlineTime := time.Now().Second() + 56
 
 	assert.True(t, ok)
-	assert.Equal(t, timer.Second(), deadlineTime)
+	assert.True(t, timer.After(m1))
+	fmt.Println(ok, timer.After(m1))
 	ReuseRequest(r)
-	assert.Equal(t, timer.Second(), deadlineTime)
+	assert.Equal(t, r.ctx, nil)
 }
