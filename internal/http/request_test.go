@@ -387,14 +387,14 @@ func TestVar_FailedToReadExtraInfoResp(t *testing.T) {
 func TestContext(t *testing.T) {
 	out := buildReq(reqOpt{})
 	now := time.Now()
-	m, _ := time.ParseDuration("56s")
-	m1 := now.Add(m)
+	timeout, _ := time.ParseDuration("56s")
+	deadline := now.Add(timeout)
 	r := CreateRequest(out)
 	timer, ok := r.Context().Deadline()
 
 	assert.True(t, ok)
-	assert.True(t, timer.After(m1))
-	fmt.Println(ok, timer.After(m1))
+	assert.True(t, timer.After(deadline))
+	fmt.Println(ok, timer.After(deadline))
 	ReuseRequest(r)
 	assert.Equal(t, r.ctx, nil)
 }
