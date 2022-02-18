@@ -61,7 +61,6 @@ func ReadErr(n int, err error, required int) bool {
 
 func WriteErr(n int, err error) {
 	if err != nil {
-		// TODO: solve "write: broken pipe" with context
 		log.Errorf("write: %s", err)
 	}
 }

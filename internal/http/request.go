@@ -18,12 +18,14 @@
 package http
 
 import (
+	"context"
 	"encoding/binary"
 	"net"
 	"net/http"
 	"net/url"
 	"reflect"
 	"sync"
+	"time"
 
 	"github.com/api7/ext-plugin-proto/go/A6"
 	ei "github.com/api7/ext-plugin-proto/go/A6/ExtraInfo"
@@ -52,6 +54,9 @@ type Request struct {
 	rawArgs url.Values
 
 	vars map[string][]byte
+
+	ctx    context.Context
+	cancel context.CancelFunc
 }
 
 func (r *Request) ConfToken() uint32 {
@@ -158,12 +163,14 @@ func (r *Request) Var(name string) ([]byte, error) {
 }
 
 func (r *Request) Reset() {
+	defer r.cancel()
 	r.path = nil
 	r.hdr = nil
 	r.args = nil
 
 	r.vars = nil
 	r.conn = nil
+	r.ctx = nil
 
 	// Keep the fields below
 	// r.extraInfoHeader = nil
@@ -279,6 +286,13 @@ func (r *Request) BindConn(c net.Conn) {
 	r.conn = c
 }
 
+func (r *Request) Context() context.Context {
+	if r.ctx != nil {
+		return r.ctx
+	}
+	return context.Background()
+}
+
 func (r *Request) askExtraInfo(builder *flatbuffers.Builder,
 	infoType ei.Info, info flatbuffers.UOffsetT) ([]byte, error) {
 
@@ -342,6 +356,11 @@ var reqPool = sync.Pool{
 func CreateRequest(buf []byte) *Request {
 	req := reqPool.Get().(*Request)
 	req.r = hrc.GetRootAsReq(buf, 0)
+	// because apisix has an implicit 60s timeout, so set the timeout to 56 seconds(smaller than 60s)
+	// so plugin writer can still break the execution with a custom response before the apisix implicit timeout.
+	ctx, cancel := context.WithTimeout(context.Background(), 56*time.Second)
+	req.ctx = ctx
+	req.cancel = cancel
 	return req
 }
 

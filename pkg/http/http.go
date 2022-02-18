@@ -18,6 +18,7 @@
 package http
 
 import (
+	"context"
 	"net"
 	"net/http"
 	"net/url"
@@ -58,6 +59,14 @@ type Request interface {
 	// the runner will ask it from the APISIX. If the RPC call is failed, an error in
 	// pkg/common.ErrConnClosed type is returned.
 	Var(name string) ([]byte, error)
+
+	// Context returns the request's context.
+	//
+	// The returned context is always non-nil; it defaults to the
+	// background context.
+	//
+	// For run plugin, the context controls cancellation.
+	Context() context.Context
 }
 
 // Header is like http.Header, but only implements the subset of its methods

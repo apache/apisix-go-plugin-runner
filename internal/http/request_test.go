@@ -19,10 +19,12 @@ package http
 
 import (
 	"encoding/binary"
+	"fmt"
 	"net"
 	"net/http"
 	"net/url"
 	"testing"
+	"time"
 
 	"github.com/api7/ext-plugin-proto/go/A6"
 	ei "github.com/api7/ext-plugin-proto/go/A6/ExtraInfo"
@@ -380,4 +382,19 @@ func TestVar_FailedToReadExtraInfoResp(t *testing.T) {
 
 	_, err := r.Var("request_time")
 	assert.Equal(t, common.ErrConnClosed, err)
+}
+
+func TestContext(t *testing.T) {
+	out := buildReq(reqOpt{})
+	now := time.Now()
+	timeout, _ := time.ParseDuration("56s")
+	deadline := now.Add(timeout)
+	r := CreateRequest(out)
+	timer, ok := r.Context().Deadline()
+
+	assert.True(t, ok)
+	assert.True(t, timer.After(deadline))
+	fmt.Println(ok, timer.After(deadline))
+	ReuseRequest(r)
+	assert.Equal(t, r.ctx, nil)
 }
