@@ -50,6 +50,8 @@ type Request interface {
 	SetPath([]byte)
 	// Header returns the HTTP headers
 	Header() Header
+	// RespHeader returns the response header
+	RespHeader() http.Header
 	// Args returns the query string
 	Args() url.Values
 
