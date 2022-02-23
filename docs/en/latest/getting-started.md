@@ -129,8 +129,8 @@ func (p *Say) Filter(conf interface{}, w http.ResponseWriter, r pkgHTTP.Request)
 ```
 
 We can see that the Filter takes the value of the body set in the configuration as the response body. If we call `Write` or `WriteHeader` of the `http.ResponseWriter`
-(respond directly in the plugin), it will response directly in the APISIX without touching the upstream. As we only support setting headers of local response,
-calling `Header` won't take any effects without calling `Write` or `WriteHeader`. (TODO: support setting response header separately)
+(respond directly in the plugin), it will response directly in the APISIX without touching the upstream. We can also set response headers in the plugin and touch the upstream
+at the same time by set RespHeader in `pkgHTTP.Request`.
 
 For the `pkgHTTP.Request`, you can refer to the API documentation provided by the Go Runner SDK:
 https://pkg.go.dev/github.com/apache/apisix-go-plugin-runner

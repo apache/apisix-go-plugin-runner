@@ -375,3 +375,35 @@ func TestFilter_SetRespHeaderDoNotBreakReq(t *testing.T) {
 	assert.Equal(t, "bar", req.Header().Get("foo"))
 	assert.Equal(t, "baz", resp.Header().Get("foo"))
 }
+
+func TestFilter_SetRespHeader(t *testing.T) {
+	InitConfCache(1 * time.Millisecond)
+
+	filterSetRespHeaderParseConf := func(in []byte) (conf interface{}, err error) {
+		return "", nil
+	}
+	filterSetRespHeaderFilter := func(conf interface{}, w http.ResponseWriter, r pkgHTTP.Request) {
+		r.RespHeader().Set("foo", "baz")
+	}
+
+	RegisterPlugin("filterSetRespHeader", filterSetRespHeaderParseConf, filterSetRespHeaderFilter)
+
+	builder := flatbuffers.NewBuilder(1024)
+	filterSetRespName := builder.CreateString("filterSetRespHeader")
+	filterSetRespConf := builder.CreateString("a")
+	prepareConfWithData(builder, filterSetRespName, filterSetRespConf)
+
+	res, _ := GetRuleConf(1)
+	hrc.ReqStart(builder)
+	hrc.ReqAddId(builder, 233)
+	hrc.ReqAddConfToken(builder, 1)
+	r := hrc.ReqEnd(builder)
+	builder.Finish(r)
+	out := builder.FinishedBytes()
+
+	req := inHTTP.CreateRequest(out)
+	resp := inHTTP.CreateResponse()
+	filter(res, resp, req)
+
+	assert.Equal(t, "baz", req.RespHeader().Get("foo"))
+}
