@@ -50,8 +50,6 @@ type Request struct {
 	hdr    *Header
 	rawHdr http.Header
 
-	respHdr http.Header
-
 	args    url.Values
 	rawArgs url.Values
 
@@ -59,6 +57,8 @@ type Request struct {
 
 	ctx    context.Context
 	cancel context.CancelFunc
+
+	respHdr http.Header
 }
 
 func (r *Request) ConfToken() uint32 {

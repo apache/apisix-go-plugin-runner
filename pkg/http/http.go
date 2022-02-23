@@ -50,8 +50,6 @@ type Request interface {
 	SetPath([]byte)
 	// Header returns the HTTP headers
 	Header() Header
-	// RespHeader returns the response header
-	RespHeader() http.Header
 	// Args returns the query string
 	Args() url.Values
 
@@ -69,6 +67,8 @@ type Request interface {
 	//
 	// For run plugin, the context controls cancellation.
 	Context() context.Context
+	// RespHeader returns the response header
+	RespHeader() http.Header
 }
 
 // Header is like http.Header, but only implements the subset of its methods
