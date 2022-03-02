@@ -54,6 +54,7 @@ type Request struct {
 	rawArgs url.Values
 
 	vars map[string][]byte
+	body []byte
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -160,6 +161,22 @@ func (r *Request) Var(name string) ([]byte, error) {
 		r.vars[name] = v
 	}
 	return v, nil
+}
+
+func (r *Request) Body() ([]byte, error) {
+	if len(r.body) > 0 {
+		return r.body, nil
+	}
+
+	builder := util.GetBuilder()
+	ei.ReqBodyStart(builder)
+	bodyInfo := ei.ReqBodyEnd(builder)
+	v, err := r.askExtraInfo(builder, ei.InfoReqBody, bodyInfo)
+	if err != nil {
+		return nil, err
+	}
+
+	return v, err
 }
 
 func (r *Request) Reset() {
