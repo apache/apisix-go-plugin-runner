@@ -164,6 +164,10 @@ func (r *Request) Var(name string) ([]byte, error) {
 }
 
 func (r *Request) Body() ([]byte, error) {
+	if r.body == nil {
+		r.body = []byte{}
+	}
+
 	if len(r.body) > 0 {
 		return r.body, nil
 	}
@@ -176,7 +180,7 @@ func (r *Request) Body() ([]byte, error) {
 		return nil, err
 	}
 
-	return v, err
+	return v, nil
 }
 
 func (r *Request) Reset() {
@@ -186,6 +190,7 @@ func (r *Request) Reset() {
 	r.args = nil
 
 	r.vars = nil
+	r.body = nil
 	r.conn = nil
 	r.ctx = nil
 
