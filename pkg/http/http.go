@@ -60,6 +60,13 @@ type Request interface {
 	// pkg/common.ErrConnClosed type is returned.
 	Var(name string) ([]byte, error)
 
+	// Body returns HTTP request body
+	//
+	// To fetch the value, the runner will look up the request's cache first. If not found,
+	// the runner will ask it from the APISIX. If the RPC call is failed, an error in
+	// pkg/common.ErrConnClosed type is returned.
+	Body() ([]byte, error)
+
 	// Context returns the request's context.
 	//
 	// The returned context is always non-nil; it defaults to the
