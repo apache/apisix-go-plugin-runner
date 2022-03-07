@@ -74,8 +74,8 @@ type Request interface {
 	//
 	// For run plugin, the context controls cancellation.
 	Context() context.Context
-	// RespHeader returns the response header
-	// Add or set response headers that exclude important headers likes `connection`,`content-length`,`transfer-encoding`,`location,server`,`www-authenticate`,`content-encoding`,`content-type`,`content-location` and `content-language`.
+	// RespHeader returns an http.Header which allows you to add or set response headers before reaching the upstream.
+	// Some built-in headers would not take effect, like `connection`,`content-length`,`transfer-encoding`,`location,server`,`www-authenticate`,`content-encoding`,`content-type`,`content-location` and `content-language`
 	RespHeader() http.Header
 }
 
