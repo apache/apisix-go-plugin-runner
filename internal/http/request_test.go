@@ -450,4 +450,59 @@ func TestRespHeader(t *testing.T){
 	}
 	assert.Equal(t, exp, res)
 
+func TestBody(t *testing.T) {
+	out := buildReq(reqOpt{})
+	r := CreateRequest(out)
+
+	cc, sc := net.Pipe()
+	r.BindConn(cc)
+
+	go func() {
+		header := make([]byte, util.HeaderLen)
+		n, err := sc.Read(header)
+		if util.ReadErr(n, err, util.HeaderLen) {
+			return
+		}
+
+		ty := header[0]
+		assert.Equal(t, byte(util.RPCExtraInfo), ty)
+		header[0] = 0
+		length := binary.BigEndian.Uint32(header)
+
+		buf := make([]byte, length)
+		n, err = sc.Read(buf)
+		if util.ReadErr(n, err, int(length)) {
+			return
+		}
+
+		req := ei.GetRootAsReq(buf, 0)
+		assert.Equal(t, ei.InfoReqBody, req.InfoType())
+
+		builder := util.GetBuilder()
+		res := builder.CreateByteVector([]byte("Hello, Go Runner"))
+		ei.RespStart(builder)
+		ei.RespAddResult(builder, res)
+		eiRes := ei.RespEnd(builder)
+		builder.Finish(eiRes)
+		out := builder.FinishedBytes()
+		size := len(out)
+		binary.BigEndian.PutUint32(header, uint32(size))
+		header[0] = util.RPCExtraInfo
+
+		n, err = sc.Write(header)
+		if err != nil {
+			util.WriteErr(n, err)
+			return
+		}
+
+		n, err = sc.Write(out)
+		if err != nil {
+			util.WriteErr(n, err)
+			return
+		}
+	}()
+
+	v, err := r.Body()
+	assert.Nil(t, err)
+	assert.Equal(t, "Hello, Go Runner", string(v))
 }
