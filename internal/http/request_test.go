@@ -425,13 +425,13 @@ func TestContext(t *testing.T) {
 	assert.Equal(t, r.ctx, nil)
 }
 
-func TestRespHeader(t *testing.T){
+func TestRespHeader(t *testing.T) {
 	out := buildReq(reqOpt{})
 	r := CreateRequest(out)
 	respHdr := r.RespHeader()
 
-	respHdr.Set("resp-header","this is resp-header")
-	respHdr.Set("Set-Cookie","mycookie=test")
+	respHdr.Set("resp-header", "this is resp-header")
+	respHdr.Set("Set-Cookie", "mycookie=test")
 
 	respHdr.Del("resp-header")
 
@@ -449,6 +449,7 @@ func TestRespHeader(t *testing.T){
 		res.Add(string(e.Name()), string(e.Value()))
 	}
 	assert.Equal(t, exp, res)
+}
 
 func TestBody(t *testing.T) {
 	out := buildReq(reqOpt{})
