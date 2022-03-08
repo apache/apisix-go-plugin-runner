@@ -205,7 +205,7 @@ func (r *Request) Reset() {
 }
 
 func (r *Request) FetchChanges(id uint32, builder *flatbuffers.Builder) bool {
-	if r.path == nil && r.hdr == nil && r.args == nil && r.respHdr == nil{
+	if r.path == nil && r.hdr == nil && r.args == nil && r.respHdr == nil {
 		return false
 	}
 
@@ -214,7 +214,7 @@ func (r *Request) FetchChanges(id uint32, builder *flatbuffers.Builder) bool {
 		path = builder.CreateByteString(r.path)
 	}
 
-	var hdrVec,respHdrVec flatbuffers.UOffsetT
+	var hdrVec, respHdrVec flatbuffers.UOffsetT
 	if r.hdr != nil {
 		hdrs := []flatbuffers.UOffsetT{}
 		oldHdr := r.rawHdr
@@ -317,8 +317,8 @@ func (r *Request) FetchChanges(id uint32, builder *flatbuffers.Builder) bool {
 	if hdrVec > 0 {
 		hrc.RewriteAddHeaders(builder, hdrVec)
 	}
-	if respHdrVec > 0{
-		hrc.RewriteAddRespHeaders(builder,respHdrVec)
+	if respHdrVec > 0 {
+		hrc.RewriteAddRespHeaders(builder, respHdrVec)
 	}
 	if argsVec > 0 {
 		hrc.RewriteAddArgs(builder, argsVec)
