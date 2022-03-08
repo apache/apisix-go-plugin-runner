@@ -66,12 +66,12 @@ type pair struct {
 }
 
 type reqOpt struct {
-	srcIP   []byte
-	method  A6.Method
-	path    string
-	headers []pair
+	srcIP      []byte
+	method     A6.Method
+	path       string
+	headers    []pair
 	respHeader []pair
-	args    []pair
+	args       []pair
 }
 
 func buildReq(opt reqOpt) []byte {
@@ -88,7 +88,7 @@ func buildReq(opt reqOpt) []byte {
 	}
 
 	hdrLen := len(opt.headers)
-	var hdrVec,respHdrVec flatbuffers.UOffsetT
+	var hdrVec, respHdrVec flatbuffers.UOffsetT
 	if hdrLen > 0 {
 		hdrs := []flatbuffers.UOffsetT{}
 		for _, v := range opt.headers {
@@ -166,8 +166,8 @@ func buildReq(opt reqOpt) []byte {
 	if hdrVec > 0 {
 		hrc.ReqAddHeaders(builder, hdrVec)
 	}
-	if respHdrVec > 0{
-		hrc.RewriteAddRespHeaders(builder,respHdrVec)
+	if respHdrVec > 0 {
+		hrc.RewriteAddRespHeaders(builder, respHdrVec)
 	}
 	if argsVec > 0 {
 		hrc.ReqAddArgs(builder, argsVec)
@@ -258,8 +258,6 @@ func TestHeader(t *testing.T) {
 	}
 	assert.Equal(t, exp, res)
 }
-
-
 
 func TestArgs(t *testing.T) {
 	out := buildReq(reqOpt{args: []pair{
