@@ -66,11 +66,12 @@ type pair struct {
 }
 
 type reqOpt struct {
-	srcIP   []byte
-	method  A6.Method
-	path    string
-	headers []pair
-	args    []pair
+	srcIP      []byte
+	method     A6.Method
+	path       string
+	headers    []pair
+	respHeader []pair
+	args       []pair
 }
 
 func buildReq(opt reqOpt) []byte {
@@ -87,7 +88,7 @@ func buildReq(opt reqOpt) []byte {
 	}
 
 	hdrLen := len(opt.headers)
-	var hdrVec flatbuffers.UOffsetT
+	var hdrVec, respHdrVec flatbuffers.UOffsetT
 	if hdrLen > 0 {
 		hdrs := []flatbuffers.UOffsetT{}
 		for _, v := range opt.headers {
@@ -106,6 +107,26 @@ func buildReq(opt reqOpt) []byte {
 			builder.PrependUOffsetT(te)
 		}
 		hdrVec = builder.EndVector(size)
+	}
+
+	if len(opt.respHeader) > 0 {
+		respHdrs := []flatbuffers.UOffsetT{}
+		for _, v := range opt.headers {
+			name := builder.CreateString(v.name)
+			value := builder.CreateString(v.value)
+			A6.TextEntryStart(builder)
+			A6.TextEntryAddName(builder, name)
+			A6.TextEntryAddValue(builder, value)
+			te := A6.TextEntryEnd(builder)
+			respHdrs = append(respHdrs, te)
+		}
+		size := len(respHdrs)
+		hrc.RewriteStartRespHeadersVector(builder, size)
+		for i := size - 1; i >= 0; i-- {
+			te := respHdrs[i]
+			builder.PrependUOffsetT(te)
+		}
+		respHdrVec = builder.EndVector(size)
 	}
 
 	argsLen := len(opt.args)
@@ -144,6 +165,9 @@ func buildReq(opt reqOpt) []byte {
 	}
 	if hdrVec > 0 {
 		hrc.ReqAddHeaders(builder, hdrVec)
+	}
+	if respHdrVec > 0 {
+		hrc.RewriteAddRespHeaders(builder, respHdrVec)
 	}
 	if argsVec > 0 {
 		hrc.ReqAddArgs(builder, argsVec)
@@ -397,6 +421,32 @@ func TestContext(t *testing.T) {
 	fmt.Println(ok, timer.After(deadline))
 	ReuseRequest(r)
 	assert.Equal(t, r.ctx, nil)
+}
+
+func TestRespHeader(t *testing.T) {
+	out := buildReq(reqOpt{})
+	r := CreateRequest(out)
+	respHdr := r.RespHeader()
+
+	respHdr.Set("resp-header", "this is resp-header")
+	respHdr.Set("Set-Cookie", "mycookie=test")
+
+	respHdr.Del("resp-header")
+
+	builder := util.GetBuilder()
+	assert.True(t, r.FetchChanges(1, builder))
+	rewrite := getRewriteAction(t, builder)
+	assert.Equal(t, 1, rewrite.RespHeadersLength())
+
+	exp := http.Header{}
+	exp.Set("Set-Cookie", "mycookie=test")
+	res := http.Header{}
+	for i := 0; i < rewrite.RespHeadersLength(); i++ {
+		e := &A6.TextEntry{}
+		rewrite.RespHeaders(e, i)
+		res.Add(string(e.Name()), string(e.Value()))
+	}
+	assert.Equal(t, exp, res)
 }
 
 func TestBody(t *testing.T) {

@@ -58,6 +58,8 @@ type Request struct {
 
 	ctx    context.Context
 	cancel context.CancelFunc
+
+	respHdr http.Header
 }
 
 func (r *Request) ConfToken() uint32 {
@@ -102,6 +104,13 @@ func (r *Request) Header() pkgHTTP.Header {
 		r.rawHdr = hdr.Clone()
 	}
 	return r.hdr
+}
+
+func (r *Request) RespHeader() http.Header {
+	if r.respHdr == nil {
+		r.respHdr = http.Header{}
+	}
+	return r.respHdr
 }
 
 func cloneUrlValues(oldV url.Values) url.Values {
@@ -190,13 +199,13 @@ func (r *Request) Reset() {
 	r.body = nil
 	r.conn = nil
 	r.ctx = nil
-
+	r.respHdr = nil
 	// Keep the fields below
 	// r.extraInfoHeader = nil
 }
 
 func (r *Request) FetchChanges(id uint32, builder *flatbuffers.Builder) bool {
-	if r.path == nil && r.hdr == nil && r.args == nil {
+	if r.path == nil && r.hdr == nil && r.args == nil && r.respHdr == nil {
 		return false
 	}
 
@@ -205,7 +214,7 @@ func (r *Request) FetchChanges(id uint32, builder *flatbuffers.Builder) bool {
 		path = builder.CreateByteString(r.path)
 	}
 
-	var hdrVec flatbuffers.UOffsetT
+	var hdrVec, respHdrVec flatbuffers.UOffsetT
 	if r.hdr != nil {
 		hdrs := []flatbuffers.UOffsetT{}
 		oldHdr := r.rawHdr
@@ -239,6 +248,28 @@ func (r *Request) FetchChanges(id uint32, builder *flatbuffers.Builder) bool {
 			builder.PrependUOffsetT(te)
 		}
 		hdrVec = builder.EndVector(size)
+	}
+
+	if r.respHdr != nil {
+		respHdrs := []flatbuffers.UOffsetT{}
+		for n, arr := range r.respHdr {
+			for _, v := range arr {
+				name := builder.CreateString(n)
+				value := builder.CreateString(v)
+				A6.TextEntryStart(builder)
+				A6.TextEntryAddName(builder, name)
+				A6.TextEntryAddValue(builder, value)
+				te := A6.TextEntryEnd(builder)
+				respHdrs = append(respHdrs, te)
+			}
+		}
+		size := len(respHdrs)
+		hrc.RewriteStartRespHeadersVector(builder, size)
+		for i := size - 1; i >= 0; i-- {
+			te := respHdrs[i]
+			builder.PrependUOffsetT(te)
+		}
+		respHdrVec = builder.EndVector(size)
 	}
 
 	var argsVec flatbuffers.UOffsetT
@@ -285,6 +316,9 @@ func (r *Request) FetchChanges(id uint32, builder *flatbuffers.Builder) bool {
 	}
 	if hdrVec > 0 {
 		hrc.RewriteAddHeaders(builder, hdrVec)
+	}
+	if respHdrVec > 0 {
+		hrc.RewriteAddRespHeaders(builder, respHdrVec)
 	}
 	if argsVec > 0 {
 		hrc.RewriteAddArgs(builder, argsVec)
