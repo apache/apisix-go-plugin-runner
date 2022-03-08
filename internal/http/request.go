@@ -199,7 +199,7 @@ func (r *Request) Reset() {
 	r.body = nil
 	r.conn = nil
 	r.ctx = nil
-
+	r.respHdr = nil
 	// Keep the fields below
 	// r.extraInfoHeader = nil
 }
