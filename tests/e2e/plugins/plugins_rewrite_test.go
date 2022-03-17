@@ -40,8 +40,8 @@ var _ = ginkgo.Describe("Rewrite Plugin", func() {
 					"ext-plugin-pre-req":{
 						"conf":[
 							{
-								"name":"rewrite",
-								"value":"{\"rewrite_path\":\"/hello/go/runner\",\"conf_header_name\":\"X-APISIX-Plugin-Runner\",\"conf_header_value\":\"Go\",\"conf_arg_name\":\"runner\",\"conf_arg_value\":\"Go\"}"
+								"name":"say",
+								"value":"{\"body\":\"hello\"}"
 							}
 						]
 					}
