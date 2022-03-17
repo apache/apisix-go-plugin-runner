@@ -1,6 +1,6 @@
 module github.com/apache/apisix-go-plugin-runner/tests/e2e
 
-go 1.18
+go 1.17
 
 require (
 	github.com/gavv/httpexpect/v2 v2.3.1
