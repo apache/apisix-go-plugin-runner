@@ -15,9 +15,9 @@
  * limitations under the License.
  */
 
- package plugins_test
+package plugins_test
 
- import (
+import (
 	"github.com/apache/apisix-go-plugin-runner/tests/e2e/tools"
 	"github.com/gavv/httpexpect/v2"
 	"github.com/onsi/ginkgo"
