@@ -1,0 +1,65 @@
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+
+name: Runner E2E Test
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  run-test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: setup python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.7'
+
+    - name: setup go
+      uses: actions/setup-go@v2.1.5
+      with:
+        go-version: "1.17"
+
+    - name: setup runner
+      run: |
+        make setup
+        make install
+
+    - name: startup runner
+      run: |
+        make dev &
+
+    - name: startup apisix
+      run: |
+        docker-compose -f ci/docker-compose.yml up -d
+        sleep 5
+
+    - name: install ginkgo cli
+      run: go install github.com/onsi/ginkgo/ginkgo@v1.16.5
+
+    - name: run tests
+      working-directory: ./tests/e2e
+      run: ginkgo -r
