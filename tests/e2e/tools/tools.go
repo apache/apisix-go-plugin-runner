@@ -24,21 +24,21 @@ import (
 	"strings"
 	"time"
 )
- 
+
 var (
 	token  = "edd1c9f034335f136f87ad84b625c8f1"
 	A6Host = "http://127.0.0.1:9080"
 )
- 
+
 func GetAdminToken() string {
 	return token
 }
- 
+
 func GetA6Expect() *httpexpect.Expect {
 	t := ginkgo.GinkgoT()
 	return httpexpect.New(t, A6Host)
 }
- 
+
 type HttpTestCase struct {
 	Object            *httpexpect.Expect
 	Method            string
@@ -53,7 +53,7 @@ type HttpTestCase struct {
 	ExpectHeaders     map[string]string
 	Sleep             time.Duration //ms
 }
- 
+
 func RunTestCase(htc HttpTestCase) {
 	var req *httpexpect.Request
 	expect := htc.Object
@@ -70,21 +70,21 @@ func RunTestCase(htc HttpTestCase) {
 		req = expect.OPTIONS(htc.Path)
 	default:
 	}
- 
+
 	if req == nil {
 		panic("init request failed")
 	}
- 
+
 	if htc.Sleep == 0 {
 		time.Sleep(time.Duration(100) * time.Millisecond)
 	} else {
 		time.Sleep(htc.Sleep)
 	}
- 
+
 	if len(htc.Query) > 0 {
 		req.WithQueryString(htc.Query)
 	}
- 
+
 	setContentType := false
 	for hk, hv := range htc.Headers {
 		req.WithHeader(hk, hv)
@@ -92,31 +92,31 @@ func RunTestCase(htc HttpTestCase) {
 			setContentType = true
 		}
 	}
- 
+
 	if !setContentType {
 		req.WithHeader("Content-Type", "application/json")
 	}
- 
+
 	if len(htc.Body) > 0 {
 		req.WithText(htc.Body)
 	}
- 
+
 	resp := req.Expect()
- 
+
 	if htc.ExpectStatus != 0 {
 		resp.Status(htc.ExpectStatus)
 	}
- 
+
 	if htc.ExpectStatusRange > 0 {
 		resp.StatusRange(htc.ExpectStatusRange)
 	}
- 
+
 	if htc.ExpectHeaders != nil {
 		for hk, hv := range htc.ExpectHeaders {
 			resp.Header(hk).Equal(hv)
 		}
 	}
- 
+
 	if htc.ExpectBody != nil {
 		if body, ok := htc.ExpectBody.(string); ok {
 			if len(body) == 0 {
@@ -125,7 +125,7 @@ func RunTestCase(htc HttpTestCase) {
 				resp.Body().Contains(body)
 			}
 		}
- 
+
 		if bodies, ok := htc.ExpectBody.([]string); ok && len(bodies) > 0 {
 			for _, b := range bodies {
 				resp.Body().Contains(b)

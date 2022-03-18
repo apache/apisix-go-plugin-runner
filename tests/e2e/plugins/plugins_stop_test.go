@@ -53,7 +53,7 @@ var _ = ginkgo.Describe("Stop Plugin", func() {
 					"type":"roundrobin"
 				}
 			}`,
-			Headers:      map[string]string{"X-API-KEY": tools.GetAdminToken()},
+			Headers:           map[string]string{"X-API-KEY": tools.GetAdminToken()},
 			ExpectStatusRange: httpexpect.Status2xx,
 		}),
 		table.Entry("test go runner stop plugin route success", tools.HttpTestCase{
