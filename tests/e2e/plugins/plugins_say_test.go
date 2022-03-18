@@ -25,23 +25,23 @@ import (
 	"net/http"
 )
 
-var _ = ginkgo.Describe("Rewrite Plugin", func() {
-	table.DescribeTable("create stop route plugin route and test",
+var _ = ginkgo.Describe("Say Plugin", func() {
+	table.DescribeTable("Say hello",
 		func(tc tools.HttpTestCase) {
 			tools.RunTestCase(tc)
 		},
-		table.Entry("create go runner rewrite plugin route success", tools.HttpTestCase{
+		table.Entry("let go plugin say hello", tools.HttpTestCase{
 			Object: tools.GetA6Expect(),
 			Method: http.MethodPut,
 			Path:   "/apisix/admin/routes/1",
 			Body: `{
-				"uri":"/test/go/runner/rewrite",
+				"uri":"/test/go/runner/say",
 				"plugins":{
 					"ext-plugin-pre-req":{
 						"conf":[
 							{
 								"name":"say",
-								"value":"{\"rewrite_path\":\"/get/go/runner\", \"body\":\"hello\"}"
+								"value":"{\"body\":\"hello\"}"
 							}
 						]
 					}
@@ -56,11 +56,11 @@ var _ = ginkgo.Describe("Rewrite Plugin", func() {
 			Headers:           map[string]string{"X-API-KEY": tools.GetAdminToken()},
 			ExpectStatusRange: httpexpect.Status2xx,
 		}),
-		table.Entry("test go runner rewrite plugin route success", tools.HttpTestCase{
+		table.Entry("return hello", tools.HttpTestCase{
 			Object:       tools.GetA6Expect(),
 			Method:       http.MethodGet,
-			Path:         "/test/go/runner/rewrite",
-			ExpectBody:   []string{"/get/go/runner", "hello"},
+			Path:         "/test/go/runner/say",
+			ExpectBody:   []string{"hello"},
 			ExpectStatus: http.StatusOK,
 		}),
 	)
