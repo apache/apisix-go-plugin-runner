@@ -41,7 +41,7 @@ var _ = ginkgo.Describe("Rewrite Plugin", func() {
 						"conf":[
 							{
 								"name":"say",
-								"value":"{\"body\":\"hello\"}"
+								"value":"{\"rewrite_path\":\"/get/go/runner\", \"body\":\"hello\"}"
 							}
 						]
 					}
@@ -60,7 +60,7 @@ var _ = ginkgo.Describe("Rewrite Plugin", func() {
 			Object:       tools.GetA6Expect(),
 			Method:       http.MethodGet,
 			Path:         "/test/go/runner/rewrite",
-			ExpectBody:   []string{"/hello/go/runner", "Go"},
+			ExpectBody:   []string{"/get/go/runner", "hello"},
 			ExpectStatus: http.StatusOK,
 		}),
 	)
