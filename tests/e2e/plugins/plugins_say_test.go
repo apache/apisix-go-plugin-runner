@@ -27,11 +27,11 @@ import (
 )
 
 var _ = ginkgo.Describe("Say Plugin", func() {
-	table.DescribeTable("Say hello",
+	table.DescribeTable("tries to test say feature.",
 		func(tc tools.HttpTestCase) {
 			tools.RunTestCase(tc)
 		},
-		table.Entry("let go plugin say hello", tools.HttpTestCase{
+		table.Entry("Config APISIX.", tools.HttpTestCase{
 			Object: tools.GetA6Expect(),
 			Method: http.MethodPut,
 			Path:   "/apisix/admin/routes/1",
@@ -57,11 +57,11 @@ var _ = ginkgo.Describe("Say Plugin", func() {
 			Headers:           map[string]string{"X-API-KEY": tools.GetAdminToken()},
 			ExpectStatusRange: httpexpect.Status2xx,
 		}),
-		table.Entry("return hello", tools.HttpTestCase{
+		table.Entry("Should return hello.", tools.HttpTestCase{
 			Object:       tools.GetA6Expect(),
 			Method:       http.MethodGet,
 			Path:         "/test/go/runner/say",
-			ExpectBody:   []string{"hello"},
+			ExpectBody:   []string{"he1llo"},
 			ExpectStatus: http.StatusOK,
 		}),
 	)

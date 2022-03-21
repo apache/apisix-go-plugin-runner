@@ -26,12 +26,12 @@ import (
 	"github.com/onsi/ginkgo/extensions/table"
 )
 
-var _ = ginkgo.Describe("Fault-injection Plugin", func() {
-	table.DescribeTable("test fault-injection to",
+var _ = ginkgo.Describe("Fault-injection plugin", func() {
+	table.DescribeTable("tries to test fault-injection feature.",
 		func(tc tools.HttpTestCase) {
 			tools.RunTestCase(tc)
 		},
-		table.Entry("let fault-injection plugin work", tools.HttpTestCase{
+		table.Entry("Config APISIX.", tools.HttpTestCase{
 			Object: tools.GetA6Expect(),
 			Method: http.MethodPut,
 			Path:   "/apisix/admin/routes/1",
@@ -57,7 +57,7 @@ var _ = ginkgo.Describe("Fault-injection Plugin", func() {
 			Headers:           map[string]string{"X-API-KEY": tools.GetAdminToken()},
 			ExpectStatusRange: httpexpect.Status2xx,
 		}),
-		table.Entry("test if fault-injection plugin work", tools.HttpTestCase{
+		table.Entry("Test if fault-injection plugin work.", tools.HttpTestCase{
 			Object:       tools.GetA6Expect(),
 			Method:       http.MethodGet,
 			Path:         "/test/go/runner/faultinjection",

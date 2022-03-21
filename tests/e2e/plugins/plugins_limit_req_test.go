@@ -26,12 +26,12 @@ import (
 	"github.com/onsi/ginkgo/extensions/table"
 )
 
-var _ = ginkgo.Describe("limit req Plugin, then", func() {
-	table.DescribeTable("limit req",
+var _ = ginkgo.Describe("Limit-req Plugin", func() {
+	table.DescribeTable("tries to test limit-req feature.",
 		func(tc tools.HttpTestCase) {
 			tools.RunTestCase(tc)
 		},
-		table.Entry("let go plugin limit req", tools.HttpTestCase{
+		table.Entry("Config APISIX.", tools.HttpTestCase{
 			Object: tools.GetA6Expect(),
 			Method: http.MethodPut,
 			Path:   "/apisix/admin/routes/1",
@@ -42,7 +42,7 @@ var _ = ginkgo.Describe("limit req Plugin, then", func() {
 						"conf":[
 							{
 								"name":"limit-req",
-								"value":"{\"rate\":5, \"burst\":1}"
+								"value":"{\"rate\":5,\"burst\":1}"
 							}
 						]
 					}
@@ -57,19 +57,20 @@ var _ = ginkgo.Describe("limit req Plugin, then", func() {
 			Headers:           map[string]string{"X-API-KEY": tools.GetAdminToken()},
 			ExpectStatusRange: httpexpect.Status2xx,
 		}),
-		table.Entry("test go runner limit req", tools.HttpTestCase{
-			Object:     tools.GetA6Expect(),
-			Method:     http.MethodGet,
-			Path:       "/test/go/runner/limitreq",
-			ExpectCode: 200,
+		table.Entry("Test if limit-req plugin work.", tools.HttpTestCase{
+			Object:       tools.GetA6Expect(),
+			Method:       http.MethodGet,
+			Path:         "/test/go/runner/limitreq",
+			// ExpectStatus: http.StatusOK,
+			ExpectCode:   200,
 		}),
 	)
 
-	table.DescribeTable("limit req",
+	table.DescribeTable("tries to test limit-req feature.",
 		func(tc tools.HttpTestCase) {
 			tools.RunTestCase(tc)
 		},
-		table.Entry("let go plugin limit req", tools.HttpTestCase{
+		table.Entry("Config APISIX.", tools.HttpTestCase{
 			Object: tools.GetA6Expect(),
 			Method: http.MethodPut,
 			Path:   "/apisix/admin/routes/1",
@@ -95,7 +96,7 @@ var _ = ginkgo.Describe("limit req Plugin, then", func() {
 			Headers:           map[string]string{"X-API-KEY": tools.GetAdminToken()},
 			ExpectStatusRange: httpexpect.Status2xx,
 		}),
-		table.Entry("test go runner limit req", tools.HttpTestCase{
+		table.Entry("Test if limit-req plugin work(expect notpass).", tools.HttpTestCase{
 			Object:       tools.GetA6Expect(),
 			Method:       http.MethodGet,
 			Path:         "/test/go/runner/limitreq",
