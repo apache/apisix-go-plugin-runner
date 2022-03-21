@@ -52,13 +52,13 @@ var _ = ginkgo.Describe("Fault-injection Plugin", func() {
 					"type":"roundrobin"
 				}
 			}`,
-			Headers:           map[string]string{"X-API-KEY": tools.GetAdminToken()},
+			Headers: map[string]string{"X-API-KEY": tools.GetAdminToken()},
 		}),
 		table.Entry("test if fault-injection plugin work", tools.HttpTestCase{
-			Object:       tools.GetA6Expect(),
-			Method:       http.MethodGet,
-			Path:         "/test/go/runner/faultinjection",
-			ExpectCode:   400,
+			Object:     tools.GetA6Expect(),
+			Method:     http.MethodGet,
+			Path:       "/test/go/runner/faultinjection",
+			ExpectCode: 400,
 		}),
 	)
 })

@@ -53,14 +53,14 @@ var _ = ginkgo.Describe("limit req Plugin, then", func() {
 					"type":"roundrobin"
 				}
 			}`,
-			Headers:      map[string]string{"X-API-KEY": tools.GetAdminToken()},
+			Headers:           map[string]string{"X-API-KEY": tools.GetAdminToken()},
 			ExpectStatusRange: httpexpect.Status2xx,
 		}),
 		table.Entry("test go runner limit req", tools.HttpTestCase{
-			Object:       tools.GetA6Expect(),
-			Method:       http.MethodGet,
-			Path:         "/test/go/runner/limitreq",
-			ExpectCode:   200,
+			Object:     tools.GetA6Expect(),
+			Method:     http.MethodGet,
+			Path:       "/test/go/runner/limitreq",
+			ExpectCode: 200,
 		}),
 	)
 
@@ -91,13 +91,13 @@ var _ = ginkgo.Describe("limit req Plugin, then", func() {
 					"type":"roundrobin"
 				}
 			}`,
-			Headers:      map[string]string{"X-API-KEY": tools.GetAdminToken()},
+			Headers: map[string]string{"X-API-KEY": tools.GetAdminToken()},
 		}),
 		table.Entry("test go runner limit req", tools.HttpTestCase{
-			Object:       tools.GetA6Expect(),
-			Method:       http.MethodGet,
-			Path:         "/test/go/runner/limitreq",
-			ExpectCode:   503,
+			Object:     tools.GetA6Expect(),
+			Method:     http.MethodGet,
+			Path:       "/test/go/runner/limitreq",
+			ExpectCode: 503,
 		}),
 	)
 })
