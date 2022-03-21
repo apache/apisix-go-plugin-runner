@@ -18,11 +18,12 @@
 package plugins_test
 
 import (
+	"net/http"
+
 	"github.com/apache/apisix-go-plugin-runner/tests/e2e/tools"
 	"github.com/gavv/httpexpect/v2"
 	"github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/extensions/table"
-	"net/http"
 )
 
 var _ = ginkgo.Describe("limit req Plugin, then", func() {
@@ -91,13 +92,14 @@ var _ = ginkgo.Describe("limit req Plugin, then", func() {
 					"type":"roundrobin"
 				}
 			}`,
-			Headers: map[string]string{"X-API-KEY": tools.GetAdminToken()},
+			Headers:           map[string]string{"X-API-KEY": tools.GetAdminToken()},
+			ExpectStatusRange: httpexpect.Status2xx,
 		}),
 		table.Entry("test go runner limit req", tools.HttpTestCase{
-			Object:     tools.GetA6Expect(),
-			Method:     http.MethodGet,
-			Path:       "/test/go/runner/limitreq",
-			ExpectCode: 503,
+			Object:       tools.GetA6Expect(),
+			Method:       http.MethodGet,
+			Path:         "/test/go/runner/limitreq",
+			ExpectStatus: http.StatusServiceUnavailable,
 		}),
 	)
 })

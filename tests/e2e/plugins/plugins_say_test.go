@@ -18,11 +18,12 @@
 package plugins_test
 
 import (
+	"net/http"
+
 	"github.com/apache/apisix-go-plugin-runner/tests/e2e/tools"
 	"github.com/gavv/httpexpect/v2"
 	"github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/extensions/table"
-	"net/http"
 )
 
 var _ = ginkgo.Describe("Say Plugin", func() {

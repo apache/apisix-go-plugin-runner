@@ -18,10 +18,12 @@
 package plugins_test
 
 import (
+	"net/http"
+
 	"github.com/apache/apisix-go-plugin-runner/tests/e2e/tools"
+	"github.com/gavv/httpexpect/v2"
 	"github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/extensions/table"
-	"net/http"
 )
 
 var _ = ginkgo.Describe("Fault-injection Plugin", func() {
@@ -39,7 +41,7 @@ var _ = ginkgo.Describe("Fault-injection Plugin", func() {
 					"ext-plugin-pre-req":{
 						"conf":[
 							{
-								"name:":"fault-injection",
+								"name":"fault-injection",
 								"value":"{\"http_status\":400,\"body\":\"hello\"}"
 							}
 						]
@@ -52,13 +54,15 @@ var _ = ginkgo.Describe("Fault-injection Plugin", func() {
 					"type":"roundrobin"
 				}
 			}`,
-			Headers: map[string]string{"X-API-KEY": tools.GetAdminToken()},
+			Headers:           map[string]string{"X-API-KEY": tools.GetAdminToken()},
+			ExpectStatusRange: httpexpect.Status2xx,
 		}),
 		table.Entry("test if fault-injection plugin work", tools.HttpTestCase{
-			Object:     tools.GetA6Expect(),
-			Method:     http.MethodGet,
-			Path:       "/test/go/runner/faultinjection",
-			ExpectCode: 400,
+			Object:       tools.GetA6Expect(),
+			Method:       http.MethodGet,
+			Path:         "/test/go/runner/faultinjection",
+			ExpectBody:   []string{"hello"},
+			ExpectStatus: http.StatusBadRequest,
 		}),
 	)
 })
