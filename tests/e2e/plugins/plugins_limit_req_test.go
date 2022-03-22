@@ -42,7 +42,7 @@ var _ = ginkgo.Describe("Limit-req Plugin", func() {
 						"conf":[
 							{
 								"name":"limit-req",
-								"value":"{\"rate\":5,\"burst\":1}"
+								"value":"{\"rate\":1,\"burst\":0}"
 							}
 						]
 					}
@@ -61,40 +61,7 @@ var _ = ginkgo.Describe("Limit-req Plugin", func() {
 			Object:       tools.GetA6Expect(),
 			Method:       http.MethodGet,
 			Path:         "/test/go/runner/limitreq",
-			// ExpectStatus: http.StatusOK,
-			ExpectCode:   200,
-		}),
-	)
-
-	table.DescribeTable("tries to test limit-req feature.",
-		func(tc tools.HttpTestCase) {
-			tools.RunTestCase(tc)
-		},
-		table.Entry("Config APISIX.", tools.HttpTestCase{
-			Object: tools.GetA6Expect(),
-			Method: http.MethodPut,
-			Path:   "/apisix/admin/routes/1",
-			Body: `{
-				"uri":"/test/go/runner/limitreq",
-				"plugins":{
-					"ext-plugin-pre-req":{
-						"conf":[
-							{
-								"name":"limit-req",
-								"value":"{}"
-							}
-						]
-					}
-				},
-				"upstream":{
-					"nodes":{
-						"web:8888":1
-					},
-					"type":"roundrobin"
-				}
-			}`,
-			Headers:           map[string]string{"X-API-KEY": tools.GetAdminToken()},
-			ExpectStatusRange: httpexpect.Status2xx,
+			ExpectStatus: http.StatusOK,
 		}),
 		table.Entry("Test if limit-req plugin work(expect notpass).", tools.HttpTestCase{
 			Object:       tools.GetA6Expect(),
