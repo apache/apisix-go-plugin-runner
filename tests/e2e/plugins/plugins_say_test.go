@@ -61,7 +61,7 @@ var _ = ginkgo.Describe("Say Plugin", func() {
 			Object:       tools.GetA6Expect(),
 			Method:       http.MethodGet,
 			Path:         "/test/go/runner/say",
-			ExpectBody:   []string{"he1llo"},
+			ExpectBody:   []string{"hello"},
 			ExpectStatus: http.StatusOK,
 		}),
 	)
