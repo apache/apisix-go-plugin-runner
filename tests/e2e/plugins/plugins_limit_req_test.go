@@ -42,7 +42,7 @@ var _ = ginkgo.Describe("Limit-req Plugin", func() {
 						"conf":[
 							{
 								"name":"limit-req",
-								"value":"{\"rate\":1,\"burst\":0}"
+								"value":"{\"rate\":5,\"burst\":1}"
 							}
 						]
 					}
@@ -62,12 +62,6 @@ var _ = ginkgo.Describe("Limit-req Plugin", func() {
 			Method:       http.MethodGet,
 			Path:         "/test/go/runner/limitreq",
 			ExpectStatus: http.StatusOK,
-		}),
-		table.Entry("Test if limit-req plugin work(expect notpass).", tools.HttpTestCase{
-			Object:       tools.GetA6Expect(),
-			Method:       http.MethodGet,
-			Path:         "/test/go/runner/limitreq",
-			ExpectStatus: http.StatusServiceUnavailable,
 		}),
 	)
 })
