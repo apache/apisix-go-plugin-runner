@@ -37,6 +37,7 @@ build:
 	cd cmd/go-runner && \
 	go build $(GO_BUILD_FLAGS) -ldflags $(GO_LDFLAGS) && \
 	mv go-runner ../.. && \
+	cd ../.. && \
 	pwd && \
 	ls
 
