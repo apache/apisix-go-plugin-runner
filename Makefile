@@ -36,7 +36,8 @@ GO_LDFLAGS ?= "-X '$(VERSYM)=$(VERSION)' -X '$(GITSHASYM)=$(GITSHA)' -X '$(BUILD
 build:
 	cd cmd/go-runner && \
 	go build $(GO_BUILD_FLAGS) -ldflags $(GO_LDFLAGS) && \
-	mv go-runner ../..
+	mv go-runner ../.. \
+	pwd
 
 .PHONY: lint
 lint:

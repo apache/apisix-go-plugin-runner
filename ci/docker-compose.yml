@@ -23,7 +23,6 @@ services:
     restart: always
     volumes:
       - ./apisix/config.yaml:/usr/local/apisix/conf/config.yaml:ro
-      - /tmp/runner.sock:/tmp/runner.sock
     depends_on:
       - etcd
     ports:

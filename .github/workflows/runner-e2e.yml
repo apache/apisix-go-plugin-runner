@@ -42,10 +42,6 @@ jobs:
       run: |
         make build
 
-    - name: startup runner
-      run: |
-        APISIX_LISTEN_ADDRESS=unix:/tmp/runner.sock APISIX_CONF_EXPIRE_TIME=3600 ./go-runner run &
-
     - name: startup apisix
       run: |
         docker-compose -f ci/docker-compose.yml up -d
