@@ -32,6 +32,6 @@ etcd:
    prefix: "/apisix"
    timeout: 30
 ext-plugin:
-  cmd: ["/home/runner/work/apisix-go-plugin-runner/apisix-go-plugin-runner", "run"]
+  cmd: ["/home/runner/work/apisix-go-plugin-runner/apisix-go-plugin-runner/go-runner", "run"]
 nginx_config:
   user: root
