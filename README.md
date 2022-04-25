@@ -40,7 +40,7 @@ This project is APISIX Go side implementation that supports writing plugins in G
 
 Currently, Go Plugin Runner is provided as a library. This is because the convention of Go is to compile all the code into an executable file. 
 
-Although there is a mechanism for Go Plugin to compile the plugin code into a dynamic link library and then load it into the body. But as far as experience is concerned, there are still some imperfections that are not so simple and direct to use.
+Although there is a mechanism for Go Plugin to compile the plugin code into a dynamic link library and then load it into the binary. But as far as experience is concerned, there are still some imperfections that are not so simple and direct to use.
 
 The structure of the apache/apisix-go-plugin-runner repository on GitHub is as follows:
 
@@ -51,12 +51,12 @@ The structure of the apache/apisix-go-plugin-runner repository on GitHub is as f
 ├── pkg
 ```
 
-Internal is responsible for the internal implementation, `pkg` displays the external interface, and `cmd` provides examples of the demonstration.
+`internal` is responsible for the internal implementation, `pkg` displays the external interface, and `cmd` provides examples of the demonstration.
 There is a subdirectory of `go-runner` under the `cmd` directory. By reading the code in this section, you can learn how to use Go Plugin Runner in practical applications.
 
 ## How it Works
 
-At present, the communication between Go Plugin Runner and Apache APISIX is based on Unix socket's RPC. So Go Plugin Runner and Apache APISIX need to be deployed on the same machine.
+At present, the communication between Go Plugin Runner and Apache APISIX is an RPC based on Unix socket. So Go Plugin Runner and Apache APISIX need to be deployed on the same machine.
 
 ### Enable Go Plugin Runner
 
@@ -64,7 +64,7 @@ As mentioned earlier, Go Plugin Runner is managed by Apache APISIX, which runs a
 
 The following configuration process will take the code `cmd/go-runner` in the `apisix-go-plugin-runner` project as an example.
 
-1. Compile the sample code. Executing make build generates the executable file go-runner.
+1. Compile the sample code. Executing `make build` generates the executable file go-runner.
 2. Make the following configuration in the conf/config.yaml file of Apache APISIX:
 
 ```yaml
@@ -76,14 +76,11 @@ With the above configuration, Apache APISIX pulls up `go-runner` when it starts 
 
 In view of the fact that `apisix-go-plugin-runner` is used in the form of a library in the actual development process, you need to replace the above example configuration with your own executable and startup instructions.
 
-Finally, the startup Apache APISIX, `go-runner` will be started along with it.
+Finally, after the startup of Apache APISIX, `go-runner` will be started along with it.
 
 ### Other configuration methods
 
 Of course, if you need to take these three steps every time you verify the functionality in the development process, it is quite tedious. So we also provide another configuration that allows apisix-go-plugin-runner to run independently during development.
-
-The Internal of apisix-java-plugin-runner
-If you're interested in the internal of apisix-java-plugin-runner, we recommend you to read the the-internal-of-apisix-java-plugin-runner, it explains the details of communication and protocol conversion with APISIX.
 
 1. The first thing to do is to compile the code.
 2. Configure the following in the conf/config.yaml file of Apache APISIX:
