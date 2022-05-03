@@ -61,7 +61,7 @@ func (p *FaultInjection) ParseConf(in []byte) (interface{}, error) {
 	}
 
 	// schema check
-	if conf.HttpStatus < 200 {
+	if conf.HttpStatus < http.StatusOK {
 		return nil, errors.New("bad http_status")
 	}
 	if conf.Percentage == -1 {
