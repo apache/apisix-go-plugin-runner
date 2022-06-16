@@ -43,8 +43,8 @@ func getStopAction(t *testing.T, b *flatbuffers.Builder) *hrc.Stop {
 }
 
 func TestFetchChanges(t *testing.T) {
-	r := CreateResponse()
-	defer ReuseResponse(r)
+	r := CreateReqResponse()
+	defer ReuseReqResponse(r)
 	r.Write([]byte("hello"))
 	h := r.Header()
 	h.Set("foo", "bar")
@@ -70,13 +70,13 @@ func TestFetchChanges(t *testing.T) {
 }
 
 func TestFetchChangesEmptyResponse(t *testing.T) {
-	r := CreateResponse()
+	r := CreateReqResponse()
 	builder := util.GetBuilder()
 	assert.False(t, r.FetchChanges(1, builder))
 }
 
 func TestFetchChangesStatusOnly(t *testing.T) {
-	r := CreateResponse()
+	r := CreateReqResponse()
 	r.WriteHeader(400)
 	builder := util.GetBuilder()
 	assert.True(t, r.FetchChanges(1, builder))
@@ -86,7 +86,7 @@ func TestFetchChangesStatusOnly(t *testing.T) {
 }
 
 func TestWriteHeaderTwice(t *testing.T) {
-	r := CreateResponse()
+	r := CreateReqResponse()
 	r.WriteHeader(400)
 	r.WriteHeader(503)
 	builder := util.GetBuilder()
