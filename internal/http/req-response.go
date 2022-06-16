@@ -130,17 +130,17 @@ func (r *ReqResponse) FetchChanges(id uint32, builder *flatbuffers.Builder) bool
 	return true
 }
 
-var respPool = sync.Pool{
+var reqRespPool = sync.Pool{
 	New: func() interface{} {
 		return &ReqResponse{}
 	},
 }
 
 func CreateReqResponse() *ReqResponse {
-	return respPool.Get().(*ReqResponse)
+	return reqRespPool.Get().(*ReqResponse)
 }
 
 func ReuseReqResponse(r *ReqResponse) {
 	r.Reset()
-	respPool.Put(r)
+	reqRespPool.Put(r)
 }
