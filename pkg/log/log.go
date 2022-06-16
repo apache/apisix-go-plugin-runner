@@ -53,6 +53,10 @@ func getLogger() *zap.SugaredLogger {
 	return logger
 }
 
+func Debugf(template string, args ...interface{}) {
+	getLogger().Debugf(template, args...)
+}
+
 func Infof(template string, args ...interface{}) {
 	getLogger().Infof(template, args...)
 }
