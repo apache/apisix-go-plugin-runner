@@ -79,6 +79,35 @@ type Request interface {
 	RespHeader() http.Header
 }
 
+// Response represents the HTTP response from the upstream received by APISIX.
+// In order to avoid semantic misunderstanding,
+// we reused Response to parse the request data when we received the rpc request from APISIX.
+// Therefore, any instance that implements the Response interface will be readable and rewritable.
+type Response interface {
+	// ID returns the request id
+	ID() uint32
+
+	// StatusCode returns the response code
+	StatusCode() int
+
+	// Header returns the response header.
+	//
+	// It allows you to add or set response headers before reaching the client.
+	Header() Header
+
+	// Write rewrites the origin response data.
+	//
+	// Unlike `ResponseWriter.Write`, we don't need to WriteHeader(http.StatusOK)
+	// before writing the data
+	// Because APISIX will convert code 0 to 200.
+	Write(b []byte) (int, error)
+
+	// WriteHeader rewrites the origin response StatusCode
+	//
+	// WriteHeader can't override written status.
+	WriteHeader(statusCode int)
+}
+
 // Header is like http.Header, but only implements the subset of its methods
 type Header interface {
 	// Set sets the header entries associated with key to the single element value.

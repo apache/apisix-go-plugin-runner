@@ -75,3 +75,7 @@ func (p *LimitReq) Filter(conf interface{}, w http.ResponseWriter, r pkgHTTP.Req
 	}
 	time.Sleep(rs.Delay())
 }
+
+func (p *LimitReq) RespFilter(interface{}, pkgHTTP.Response) {
+
+}

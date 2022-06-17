@@ -94,3 +94,7 @@ func (p *FaultInjection) Filter(conf interface{}, w http.ResponseWriter, r pkgHT
 		log.Errorf("failed to write: %s", err)
 	}
 }
+
+func (p *FaultInjection) RespFilter(interface{}, pkgHTTP.Response) {
+
+}

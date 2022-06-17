@@ -35,10 +35,12 @@ import (
 
 type ParseConfFunc func(in []byte) (conf interface{}, err error)
 type FilterFunc func(conf interface{}, w http.ResponseWriter, r pkgHTTP.Request)
+type RespFilterFunc func(conf interface{}, w pkgHTTP.Response)
 
 type pluginOpts struct {
-	ParseConf ParseConfFunc
-	Filter    FilterFunc
+	ParseConf  ParseConfFunc
+	Filter     FilterFunc
+	RespFilter RespFilterFunc
 }
 
 type pluginRegistries struct {
@@ -57,12 +59,13 @@ func (err ErrPluginRegistered) Error() string {
 var (
 	pluginRegistry = pluginRegistries{opts: map[string]*pluginOpts{}}
 
-	ErrMissingName            = errors.New("missing name")
-	ErrMissingParseConfMethod = errors.New("missing ParseConf method")
-	ErrMissingFilterMethod    = errors.New("missing Filter method")
+	ErrMissingName             = errors.New("missing name")
+	ErrMissingParseConfMethod  = errors.New("missing ParseConf method")
+	ErrMissingFilterMethod     = errors.New("missing Filter method")
+	ErrMissingRespFilterMethod = errors.New("missing RespFilter method")
 )
 
-func RegisterPlugin(name string, pc ParseConfFunc, sv FilterFunc) error {
+func RegisterPlugin(name string, pc ParseConfFunc, sv FilterFunc, rsv RespFilterFunc) error {
 	log.Infof("register plugin %s", name)
 
 	if name == "" {
@@ -74,10 +77,14 @@ func RegisterPlugin(name string, pc ParseConfFunc, sv FilterFunc) error {
 	if sv == nil {
 		return ErrMissingFilterMethod
 	}
+	if rsv == nil {
+		return ErrMissingRespFilterMethod
+	}
 
 	opt := &pluginOpts{
-		ParseConf: pc,
-		Filter:    sv,
+		ParseConf:  pc,
+		Filter:     sv,
+		RespFilter: rsv,
 	}
 	pluginRegistry.Lock()
 	defer pluginRegistry.Unlock()

@@ -64,3 +64,7 @@ func (p *Say) Filter(conf interface{}, w http.ResponseWriter, r pkgHTTP.Request)
 		log.Errorf("failed to write: %s", err)
 	}
 }
+
+func (p *Say) RespFilter(interface{}, pkgHTTP.Response) {
+
+}
