@@ -34,13 +34,13 @@ import (
 )
 
 type ParseConfFunc func(in []byte) (conf interface{}, err error)
-type FilterFunc func(conf interface{}, w http.ResponseWriter, r pkgHTTP.Request)
-type RespFilterFunc func(conf interface{}, w pkgHTTP.Response)
+type RequestFilterFunc func(conf interface{}, w http.ResponseWriter, r pkgHTTP.Request)
+type ResponseFilterFunc func(conf interface{}, w pkgHTTP.Response)
 
 type pluginOpts struct {
-	ParseConf  ParseConfFunc
-	Filter     FilterFunc
-	RespFilter RespFilterFunc
+	ParseConf      ParseConfFunc
+	RequestFilter  RequestFilterFunc
+	ResponseFilter ResponseFilterFunc
 }
 
 type pluginRegistries struct {
@@ -59,13 +59,13 @@ func (err ErrPluginRegistered) Error() string {
 var (
 	pluginRegistry = pluginRegistries{opts: map[string]*pluginOpts{}}
 
-	ErrMissingName             = errors.New("missing name")
-	ErrMissingParseConfMethod  = errors.New("missing ParseConf method")
-	ErrMissingFilterMethod     = errors.New("missing Filter method")
-	ErrMissingRespFilterMethod = errors.New("missing RespFilter method")
+	ErrMissingName                 = errors.New("missing name")
+	ErrMissingParseConfMethod      = errors.New("missing ParseConf method")
+	ErrMissingRequestFilterMethod  = errors.New("missing RequestFilter method")
+	ErrMissingResponseFilterMethod = errors.New("missing ResponseFilter method")
 )
 
-func RegisterPlugin(name string, pc ParseConfFunc, sv FilterFunc, rsv RespFilterFunc) error {
+func RegisterPlugin(name string, pc ParseConfFunc, sv RequestFilterFunc, rsv ResponseFilterFunc) error {
 	log.Infof("register plugin %s", name)
 
 	if name == "" {
@@ -75,16 +75,16 @@ func RegisterPlugin(name string, pc ParseConfFunc, sv FilterFunc, rsv RespFilter
 		return ErrMissingParseConfMethod
 	}
 	if sv == nil {
-		return ErrMissingFilterMethod
+		return ErrMissingRequestFilterMethod
 	}
 	if rsv == nil {
-		return ErrMissingRespFilterMethod
+		return ErrMissingResponseFilterMethod
 	}
 
 	opt := &pluginOpts{
-		ParseConf:  pc,
-		Filter:     sv,
-		RespFilter: rsv,
+		ParseConf:      pc,
+		RequestFilter:  sv,
+		ResponseFilter: rsv,
 	}
 	pluginRegistry.Lock()
 	defer pluginRegistry.Unlock()
@@ -112,7 +112,7 @@ func filter(conf RuleConf, w *inHTTP.ReqResponse, r pkgHTTP.Request) error {
 
 		log.Infof("run plugin %s", c.Name)
 
-		plugin.Filter(c.Value, w, r)
+		plugin.RequestFilter(c.Value, w, r)
 
 		if w.HasChange() {
 			// response is generated, no need to continue

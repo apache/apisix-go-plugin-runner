@@ -81,7 +81,7 @@ type Request interface {
 
 // Response represents the HTTP response from the upstream received by APISIX.
 // In order to avoid semantic misunderstanding,
-// we reused Response to parse the request data when we received the rpc request from APISIX.
+// we also use Response to represent the rewritten response from Plugin Runner.
 // Therefore, any instance that implements the Response interface will be readable and rewritable.
 type Response interface {
 	// ID returns the request id

@@ -52,7 +52,7 @@ func (p *Say) ParseConf(in []byte) (interface{}, error) {
 	return conf, err
 }
 
-func (p *Say) Filter(conf interface{}, w http.ResponseWriter, r pkgHTTP.Request) {
+func (p *Say) RequestFilter(conf interface{}, w http.ResponseWriter, r pkgHTTP.Request) {
 	body := conf.(SayConf).Body
 	if len(body) == 0 {
 		return
@@ -65,6 +65,6 @@ func (p *Say) Filter(conf interface{}, w http.ResponseWriter, r pkgHTTP.Request)
 	}
 }
 
-func (p *Say) RespFilter(interface{}, pkgHTTP.Response) {
+func (p *Say) ResponseFilter(interface{}, pkgHTTP.Response) {
 
 }

@@ -33,7 +33,7 @@ func TestSay(t *testing.T) {
 	assert.Equal(t, "hello", conf.(SayConf).Body)
 
 	w := httptest.NewRecorder()
-	say.Filter(conf, w, nil)
+	say.RequestFilter(conf, w, nil)
 	resp := w.Result()
 	body, _ := ioutil.ReadAll(resp.Body)
 	assert.Equal(t, 200, resp.StatusCode)
@@ -56,7 +56,7 @@ func TestSay_NoBody(t *testing.T) {
 	assert.Equal(t, "", conf.(SayConf).Body)
 
 	w := httptest.NewRecorder()
-	say.Filter(conf, w, nil)
+	say.RequestFilter(conf, w, nil)
 	resp := w.Result()
 	assert.Equal(t, "", resp.Header.Get("X-Resp-A6-Runner"))
 }

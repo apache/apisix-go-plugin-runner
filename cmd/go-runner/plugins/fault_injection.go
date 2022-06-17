@@ -77,7 +77,7 @@ func sampleHit(percentage int) bool {
 	return rand.Intn(100) < percentage
 }
 
-func (p *FaultInjection) Filter(conf interface{}, w http.ResponseWriter, r pkgHTTP.Request) {
+func (p *FaultInjection) RequestFilter(conf interface{}, w http.ResponseWriter, r pkgHTTP.Request) {
 	fc := conf.(FaultInjectionConf)
 	if !sampleHit(fc.Percentage) {
 		return
@@ -95,6 +95,6 @@ func (p *FaultInjection) Filter(conf interface{}, w http.ResponseWriter, r pkgHT
 	}
 }
 
-func (p *FaultInjection) RespFilter(interface{}, pkgHTTP.Response) {
+func (p *FaultInjection) ResponseFilter(interface{}, pkgHTTP.Response) {
 
 }

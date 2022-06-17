@@ -38,7 +38,7 @@ func TestLimitReq(t *testing.T) {
 		wg.Add(1)
 		go func(i int) {
 			w := httptest.NewRecorder()
-			lr.Filter(conf, w, nil)
+			lr.RequestFilter(conf, w, nil)
 			resp := w.Result()
 			res[i] = resp
 			wg.Done()
@@ -64,7 +64,7 @@ func TestLimitReq_YouShouldNotPass(t *testing.T) {
 	assert.Nil(t, err)
 
 	w := httptest.NewRecorder()
-	lr.Filter(conf, w, nil)
+	lr.RequestFilter(conf, w, nil)
 	resp := w.Result()
 	assert.Equal(t, 503, resp.StatusCode)
 }
