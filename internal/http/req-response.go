@@ -27,20 +27,20 @@ import (
 	flatbuffers "github.com/google/flatbuffers/go"
 )
 
-type Response struct {
+type ReqResponse struct {
 	hdr  http.Header
 	body *bytes.Buffer
 	code int
 }
 
-func (r *Response) Header() http.Header {
+func (r *ReqResponse) Header() http.Header {
 	if r.hdr == nil {
 		r.hdr = http.Header{}
 	}
 	return r.hdr
 }
 
-func (r *Response) Write(b []byte) (int, error) {
+func (r *ReqResponse) Write(b []byte) (int, error) {
 	if r.body == nil {
 		r.body = &bytes.Buffer{}
 	}
@@ -50,7 +50,7 @@ func (r *Response) Write(b []byte) (int, error) {
 	return r.body.Write(b)
 }
 
-func (r *Response) WriteHeader(statusCode int) {
+func (r *ReqResponse) WriteHeader(statusCode int) {
 	if r.code != 0 {
 		// official WriteHeader can't override written status
 		// keep the same behavior
@@ -59,17 +59,17 @@ func (r *Response) WriteHeader(statusCode int) {
 	r.code = statusCode
 }
 
-func (r *Response) Reset() {
+func (r *ReqResponse) Reset() {
 	r.body = nil
 	r.code = 0
 	r.hdr = nil
 }
 
-func (r *Response) HasChange() bool {
+func (r *ReqResponse) HasChange() bool {
 	return !(r.body == nil && r.code == 0)
 }
 
-func (r *Response) FetchChanges(id uint32, builder *flatbuffers.Builder) bool {
+func (r *ReqResponse) FetchChanges(id uint32, builder *flatbuffers.Builder) bool {
 	if !r.HasChange() {
 		return false
 	}
@@ -130,17 +130,17 @@ func (r *Response) FetchChanges(id uint32, builder *flatbuffers.Builder) bool {
 	return true
 }
 
-var respPool = sync.Pool{
+var reqRespPool = sync.Pool{
 	New: func() interface{} {
-		return &Response{}
+		return &ReqResponse{}
 	},
 }
 
-func CreateResponse() *Response {
-	return respPool.Get().(*Response)
+func CreateReqResponse() *ReqResponse {
+	return reqRespPool.Get().(*ReqResponse)
 }
 
-func ReuseResponse(r *Response) {
+func ReuseReqResponse(r *ReqResponse) {
 	r.Reset()
-	respPool.Put(r)
+	reqRespPool.Put(r)
 }

@@ -95,7 +95,7 @@ func findPlugin(name string) *pluginOpts {
 	return nil
 }
 
-func filter(conf RuleConf, w *inHTTP.Response, r pkgHTTP.Request) error {
+func filter(conf RuleConf, w *inHTTP.ReqResponse, r pkgHTTP.Request) error {
 	for _, c := range conf {
 		plugin := findPlugin(c.Name)
 		if plugin == nil {
@@ -115,7 +115,7 @@ func filter(conf RuleConf, w *inHTTP.Response, r pkgHTTP.Request) error {
 	return nil
 }
 
-func reportAction(id uint32, req *inHTTP.Request, resp *inHTTP.Response) *flatbuffers.Builder {
+func reportAction(id uint32, req *inHTTP.Request, resp *inHTTP.ReqResponse) *flatbuffers.Builder {
 	builder := util.GetBuilder()
 
 	if resp != nil && resp.FetchChanges(id, builder) {
@@ -138,8 +138,8 @@ func HTTPReqCall(buf []byte, conn net.Conn) (*flatbuffers.Builder, error) {
 	req.BindConn(conn)
 	defer inHTTP.ReuseRequest(req)
 
-	resp := inHTTP.CreateResponse()
-	defer inHTTP.ReuseResponse(resp)
+	resp := inHTTP.CreateReqResponse()
+	defer inHTTP.ReuseReqResponse(resp)
 
 	token := req.ConfToken()
 	conf, err := GetRuleConf(token)

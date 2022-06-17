@@ -421,17 +421,3 @@ func ReuseRequest(r *Request) {
 	r.Reset()
 	reqPool.Put(r)
 }
-
-type Header struct {
-	http.Header
-}
-
-func newHeader() *Header {
-	return &Header{
-		Header: http.Header{},
-	}
-}
-
-func (h *Header) View() http.Header {
-	return h.Header
-}

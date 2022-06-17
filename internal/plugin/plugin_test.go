@@ -319,14 +319,14 @@ func TestFilter(t *testing.T) {
 	out := builder.FinishedBytes()
 
 	req := inHTTP.CreateRequest(out)
-	resp := inHTTP.CreateResponse()
+	resp := inHTTP.CreateReqResponse()
 	filter(res, resp, req)
 
 	assert.Equal(t, "bar", resp.Header().Get("foo"))
 	assert.Equal(t, "", req.Header().Get("foo"))
 
 	req = inHTTP.CreateRequest(out)
-	resp = inHTTP.CreateResponse()
+	resp = inHTTP.CreateReqResponse()
 	prepareConfWithData(builder, barName, barConf, fooName, fooConf)
 	res, _ = GetRuleConf(2)
 	filter(res, resp, req)
@@ -369,7 +369,7 @@ func TestFilter_SetRespHeaderDoNotBreakReq(t *testing.T) {
 	out := builder.FinishedBytes()
 
 	req := inHTTP.CreateRequest(out)
-	resp := inHTTP.CreateResponse()
+	resp := inHTTP.CreateReqResponse()
 	filter(res, resp, req)
 
 	assert.Equal(t, "bar", req.Header().Get("foo"))
@@ -402,7 +402,7 @@ func TestFilter_SetRespHeader(t *testing.T) {
 	out := builder.FinishedBytes()
 
 	req := inHTTP.CreateRequest(out)
-	resp := inHTTP.CreateResponse()
+	resp := inHTTP.CreateReqResponse()
 	filter(res, resp, req)
 
 	assert.Equal(t, "baz", req.RespHeader().Get("foo"))
