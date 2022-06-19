@@ -111,10 +111,10 @@ type SayConf struct {
 }
 ```
 
-`Filter` will be executed on every request with the say plugin configured.
+`RequestFilter` will be executed on every request with the say plugin configured.
 
 ```
-func (p *Say) Filter(conf interface{}, w http.ResponseWriter, r pkgHTTP.Request) {
+func (p *Say) RequestFilter(conf interface{}, w http.ResponseWriter, r pkgHTTP.Request) {
 	body := conf.(SayConf).
 	if len(body) == 0 {
 		return
@@ -128,7 +128,7 @@ func (p *Say) Filter(conf interface{}, w http.ResponseWriter, r pkgHTTP.Request)
 }
 ```
 
-We can see that the Filter takes the value of the body set in the configuration as the response body. If we call `Write` or `WriteHeader` of the `http.ResponseWriter`
+We can see that the RequestFilter takes the value of the body set in the configuration as the response body. If we call `Write` or `WriteHeader` of the `http.ResponseWriter`
 (respond directly in the plugin), it will response directly in the APISIX without touching the upstream. We can also set response headers in the plugin and touch the upstream
 at the same time by set RespHeader in `pkgHTTP.Request`.
 

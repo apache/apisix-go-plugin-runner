@@ -36,7 +36,11 @@ var (
 		return string(in), nil
 	}
 
-	emptyFilter = func(conf interface{}, w http.ResponseWriter, r pkgHTTP.Request) {
+	emptyRequestFilter = func(conf interface{}, w http.ResponseWriter, r pkgHTTP.Request) {
+		return
+	}
+
+	emptyResponseFilter = func(conf interface{}, w pkgHTTP.Response) {
 		return
 	}
 )
@@ -73,7 +77,7 @@ func TestHTTPReqCall_FailedToParseConf(t *testing.T) {
 		assert.Equal(t, "foo", conf.(string))
 	}
 
-	RegisterPlugin("baz", bazParseConf, bazFilter)
+	RegisterPlugin("baz", bazParseConf, bazFilter, emptyResponseFilter)
 
 	builder := flatbuffers.NewBuilder(1024)
 	bazName := builder.CreateString("baz")
@@ -100,7 +104,8 @@ func TestRegisterPlugin(t *testing.T) {
 	type args struct {
 		name string
 		pc   ParseConfFunc
-		sv   FilterFunc
+		sv   RequestFilterFunc
+		rsv  ResponseFilterFunc
 	}
 	tests := []struct {
 		name    string
@@ -112,7 +117,8 @@ func TestRegisterPlugin(t *testing.T) {
 			args: args{
 				name: "1",
 				pc:   nil,
-				sv:   emptyFilter,
+				sv:   emptyRequestFilter,
+				rsv:  emptyResponseFilter,
 			},
 			wantErr: ErrMissingParseConfMethod,
 		},
@@ -122,8 +128,19 @@ func TestRegisterPlugin(t *testing.T) {
 				name: "1",
 				pc:   emptyParseConf,
 				sv:   nil,
+				rsv:  emptyResponseFilter,
 			},
-			wantErr: ErrMissingFilterMethod,
+			wantErr: ErrMissingRequestFilterMethod,
+		},
+		{
+			name: "test_MissingRespFilterMethod",
+			args: args{
+				name: "1",
+				pc:   emptyParseConf,
+				sv:   emptyRequestFilter,
+				rsv:  nil,
+			},
+			wantErr: ErrMissingResponseFilterMethod,
 		},
 		{
 			name: "test_MissingParseConfMethod&FilterMethod",
@@ -131,6 +148,17 @@ func TestRegisterPlugin(t *testing.T) {
 				name: "1",
 				pc:   nil,
 				sv:   nil,
+				rsv:  emptyResponseFilter,
+			},
+			wantErr: ErrMissingParseConfMethod,
+		},
+		{
+			name: "test_MissingParseConfMethod&RespFilterMethod",
+			args: args{
+				name: "1",
+				pc:   nil,
+				sv:   emptyRequestFilter,
+				rsv:  nil,
 			},
 			wantErr: ErrMissingParseConfMethod,
 		},
@@ -139,16 +167,18 @@ func TestRegisterPlugin(t *testing.T) {
 			args: args{
 				name: "",
 				pc:   nil,
-				sv:   emptyFilter,
+				sv:   emptyRequestFilter,
+				rsv:  emptyResponseFilter,
 			},
 			wantErr: ErrMissingName,
 		},
 		{
-			name: "test_MissingName&FilterMethod",
+			name: "test_MissingName&FilterMethod&RespFilterMethod",
 			args: args{
 				name: "",
 				pc:   emptyParseConf,
 				sv:   nil,
+				rsv:  nil,
 			},
 			wantErr: ErrMissingName,
 		},
@@ -158,6 +188,7 @@ func TestRegisterPlugin(t *testing.T) {
 				name: "",
 				pc:   nil,
 				sv:   nil,
+				rsv:  nil,
 			},
 			wantErr: ErrMissingName,
 		},
@@ -166,7 +197,8 @@ func TestRegisterPlugin(t *testing.T) {
 			args: args{
 				name: "plugin1",
 				pc:   emptyParseConf,
-				sv:   emptyFilter,
+				sv:   emptyRequestFilter,
+				rsv:  emptyResponseFilter,
 			},
 			wantErr: nil,
 		},
@@ -175,7 +207,8 @@ func TestRegisterPlugin(t *testing.T) {
 			args: args{
 				name: "plugin1",
 				pc:   emptyParseConf,
-				sv:   emptyFilter,
+				sv:   emptyRequestFilter,
+				rsv:  emptyResponseFilter,
 			},
 			wantErr: ErrPluginRegistered{"plugin1"},
 		},
@@ -184,7 +217,8 @@ func TestRegisterPlugin(t *testing.T) {
 			args: args{
 				name: "plugin2111%#@#",
 				pc:   emptyParseConf,
-				sv:   emptyFilter,
+				sv:   emptyRequestFilter,
+				rsv:  emptyResponseFilter,
 			},
 			wantErr: nil,
 		},
@@ -193,7 +227,8 @@ func TestRegisterPlugin(t *testing.T) {
 			args: args{
 				name: "plugin311*%#@#",
 				pc:   emptyParseConf,
-				sv:   emptyFilter,
+				sv:   emptyRequestFilter,
+				rsv:  emptyResponseFilter,
 			},
 			wantErr: nil,
 		},
@@ -202,14 +237,15 @@ func TestRegisterPlugin(t *testing.T) {
 			args: args{
 				name: "plugin311*%#@#",
 				pc:   emptyParseConf,
-				sv:   emptyFilter,
+				sv:   emptyRequestFilter,
+				rsv:  emptyResponseFilter,
 			},
 			wantErr: ErrPluginRegistered{"plugin311*%#@#"},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := RegisterPlugin(tt.args.name, tt.args.pc, tt.args.sv); !assert.Equal(t, tt.wantErr, err) {
+			if err := RegisterPlugin(tt.args.name, tt.args.pc, tt.args.sv, tt.args.rsv); !assert.Equal(t, tt.wantErr, err) {
 				t.Errorf("RegisterPlugin() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -217,12 +253,13 @@ func TestRegisterPlugin(t *testing.T) {
 }
 
 func TestRegisterPluginConcurrent(t *testing.T) {
-	RegisterPlugin("test_concurrent-1", emptyParseConf, emptyFilter)
-	RegisterPlugin("test_concurrent-2", emptyParseConf, emptyFilter)
+	RegisterPlugin("test_concurrent-1", emptyParseConf, emptyRequestFilter, emptyResponseFilter)
+	RegisterPlugin("test_concurrent-2", emptyParseConf, emptyRequestFilter, emptyResponseFilter)
 	type args struct {
 		name string
 		pc   ParseConfFunc
-		sv   FilterFunc
+		sv   RequestFilterFunc
+		rsv  ResponseFilterFunc
 	}
 	type test struct {
 		name    string
@@ -235,7 +272,8 @@ func TestRegisterPluginConcurrent(t *testing.T) {
 			args: args{
 				name: "test_concurrent-1",
 				pc:   emptyParseConf,
-				sv:   emptyFilter,
+				sv:   emptyRequestFilter,
+				rsv:  emptyResponseFilter,
 			},
 			wantErr: ErrPluginRegistered{"test_concurrent-1"},
 		},
@@ -244,7 +282,8 @@ func TestRegisterPluginConcurrent(t *testing.T) {
 			args: args{
 				name: "test_concurrent-2",
 				pc:   emptyParseConf,
-				sv:   emptyFilter,
+				sv:   emptyRequestFilter,
+				rsv:  emptyResponseFilter,
 			},
 			wantErr: ErrPluginRegistered{"test_concurrent-2"},
 		},
@@ -253,7 +292,8 @@ func TestRegisterPluginConcurrent(t *testing.T) {
 			args: args{
 				name: "test_concurrent-2",
 				pc:   emptyParseConf,
-				sv:   emptyFilter,
+				sv:   emptyRequestFilter,
+				rsv:  emptyResponseFilter,
 			},
 			wantErr: ErrPluginRegistered{"test_concurrent-2"},
 		},
@@ -262,7 +302,8 @@ func TestRegisterPluginConcurrent(t *testing.T) {
 			args: args{
 				name: "test_concurrent-2",
 				pc:   emptyParseConf,
-				sv:   emptyFilter,
+				sv:   emptyRequestFilter,
+				rsv:  emptyResponseFilter,
 			},
 			wantErr: ErrPluginRegistered{"test_concurrent-2"},
 		},
@@ -271,7 +312,7 @@ func TestRegisterPluginConcurrent(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			for i := 0; i < 3; i++ {
 				go func(tt test) {
-					if err := RegisterPlugin(tt.args.name, tt.args.pc, tt.args.sv); !assert.Equal(t, tt.wantErr, err) {
+					if err := RegisterPlugin(tt.args.name, tt.args.pc, tt.args.sv, tt.args.rsv); !assert.Equal(t, tt.wantErr, err) {
 						t.Errorf("RegisterPlugin() error = %v, wantErr %v", err, tt.wantErr)
 					}
 				}(tt)
@@ -300,8 +341,8 @@ func TestFilter(t *testing.T) {
 		assert.Equal(t, "bar", conf.(string))
 	}
 
-	RegisterPlugin("foo", fooParseConf, fooFilter)
-	RegisterPlugin("bar", barParseConf, barFilter)
+	RegisterPlugin("foo", fooParseConf, fooFilter, emptyResponseFilter)
+	RegisterPlugin("bar", barParseConf, barFilter, emptyResponseFilter)
 
 	builder := flatbuffers.NewBuilder(1024)
 	fooName := builder.CreateString("foo")
@@ -350,8 +391,8 @@ func TestFilter_SetRespHeaderDoNotBreakReq(t *testing.T) {
 	filterSetRespFilter := func(conf interface{}, w http.ResponseWriter, r pkgHTTP.Request) {
 		w.Header().Add("foo", "baz")
 	}
-	RegisterPlugin("bar", barParseConf, barFilter)
-	RegisterPlugin("filterSetResp", filterSetRespParseConf, filterSetRespFilter)
+	RegisterPlugin("bar", barParseConf, barFilter, emptyResponseFilter)
+	RegisterPlugin("filterSetResp", filterSetRespParseConf, filterSetRespFilter, emptyResponseFilter)
 
 	builder := flatbuffers.NewBuilder(1024)
 	barName := builder.CreateString("bar")
@@ -386,7 +427,7 @@ func TestFilter_SetRespHeader(t *testing.T) {
 		r.RespHeader().Set("foo", "baz")
 	}
 
-	RegisterPlugin("filterSetRespHeader", filterSetRespHeaderParseConf, filterSetRespHeaderFilter)
+	RegisterPlugin("filterSetRespHeader", filterSetRespHeaderParseConf, filterSetRespHeaderFilter, emptyResponseFilter)
 
 	builder := flatbuffers.NewBuilder(1024)
 	filterSetRespName := builder.CreateString("filterSetRespHeader")

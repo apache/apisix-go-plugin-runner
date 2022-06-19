@@ -32,7 +32,7 @@ func TestFaultInjection(t *testing.T) {
 	assert.Nil(t, err)
 
 	w := httptest.NewRecorder()
-	fi.Filter(conf, w, nil)
+	fi.RequestFilter(conf, w, nil)
 	resp := w.Result()
 	body, _ := ioutil.ReadAll(resp.Body)
 	assert.Equal(t, 400, resp.StatusCode)
@@ -46,7 +46,7 @@ func TestFaultInjection_Percentage(t *testing.T) {
 	assert.Nil(t, err)
 
 	w := httptest.NewRecorder()
-	fi.Filter(conf, w, nil)
+	fi.RequestFilter(conf, w, nil)
 	resp := w.Result()
 	assert.Equal(t, 200, resp.StatusCode)
 }

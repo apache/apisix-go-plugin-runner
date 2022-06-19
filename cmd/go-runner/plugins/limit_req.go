@@ -62,8 +62,8 @@ func (p *LimitReq) ParseConf(in []byte) (interface{}, error) {
 	return conf, nil
 }
 
-// Filter is called when a request hits the route
-func (p *LimitReq) Filter(conf interface{}, w http.ResponseWriter, r pkgHTTP.Request) {
+// RequestFilter is called when a request hits the route
+func (p *LimitReq) RequestFilter(conf interface{}, w http.ResponseWriter, r pkgHTTP.Request) {
 	li := conf.(LimitReqConf).limiter
 	rs := li.Reserve()
 	if !rs.OK() {
@@ -74,4 +74,8 @@ func (p *LimitReq) Filter(conf interface{}, w http.ResponseWriter, r pkgHTTP.Req
 		return
 	}
 	time.Sleep(rs.Delay())
+}
+
+func (p *LimitReq) ResponseFilter(interface{}, pkgHTTP.Response) {
+
 }

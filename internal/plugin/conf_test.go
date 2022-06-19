@@ -97,7 +97,7 @@ func TestPrepareConfBadConf(t *testing.T) {
 	f := func(in []byte) (conf interface{}, err error) {
 		return nil, errors.New("ouch")
 	}
-	RegisterPlugin("bad_conf", f, emptyFilter)
+	RegisterPlugin("bad_conf", f, emptyRequestFilter, emptyResponseFilter)
 	name := builder.CreateString("bad_conf")
 	value := builder.CreateString(`{"body":"yes"}`)
 	prepareConfWithData(builder, name, value)
@@ -239,7 +239,7 @@ func TestGetRuleConf(t *testing.T) {
 }
 
 func TestGetRuleConfCheckConf(t *testing.T) {
-	RegisterPlugin("echo", emptyParseConf, emptyFilter)
+	RegisterPlugin("echo", emptyParseConf, emptyRequestFilter, emptyResponseFilter)
 	InitConfCache(1 * time.Millisecond)
 	builder := flatbuffers.NewBuilder(1024)
 
