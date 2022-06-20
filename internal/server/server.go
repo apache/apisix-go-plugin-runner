@@ -51,6 +51,9 @@ var (
 		util.RPCHTTPReqCall: func(buf []byte, conn net.Conn) (*flatbuffers.Builder, error) {
 			return plugin.HTTPReqCall(buf, conn)
 		},
+		util.RPCHTTPRespCall: func(buf []byte, conn net.Conn) (*flatbuffers.Builder, error) {
+			return plugin.HTTPRespCall(buf, conn)
+		},
 	}
 )
 

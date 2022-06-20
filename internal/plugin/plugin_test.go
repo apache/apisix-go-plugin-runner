@@ -26,7 +26,8 @@ import (
 	inHTTP "github.com/apache/apisix-go-plugin-runner/internal/http"
 	pkgHTTP "github.com/apache/apisix-go-plugin-runner/pkg/http"
 
-	hrc "github.com/api7/ext-plugin-proto/go/A6/HTTPReqCall"
+	hreqc "github.com/api7/ext-plugin-proto/go/A6/HTTPReqCall"
+	hrespc "github.com/api7/ext-plugin-proto/go/A6/HTTPRespCall"
 	flatbuffers "github.com/google/flatbuffers/go"
 	"github.com/stretchr/testify/assert"
 )
@@ -50,10 +51,10 @@ func TestHTTPReqCall(t *testing.T) {
 	SetRuleConfInTest(1, RuleConf{})
 
 	builder := flatbuffers.NewBuilder(1024)
-	hrc.ReqStart(builder)
-	hrc.ReqAddId(builder, 233)
-	hrc.ReqAddConfToken(builder, 1)
-	r := hrc.ReqEnd(builder)
+	hreqc.ReqStart(builder)
+	hreqc.ReqAddId(builder, 233)
+	hreqc.ReqAddConfToken(builder, 1)
+	r := hreqc.ReqEnd(builder)
 	builder.Finish(r)
 	out := builder.FinishedBytes()
 
@@ -61,9 +62,9 @@ func TestHTTPReqCall(t *testing.T) {
 	assert.Nil(t, err)
 
 	out = b.FinishedBytes()
-	resp := hrc.GetRootAsResp(out, 0)
+	resp := hreqc.GetRootAsResp(out, 0)
 	assert.Equal(t, uint32(233), resp.Id())
-	assert.Equal(t, hrc.ActionNONE, resp.ActionType())
+	assert.Equal(t, hreqc.ActionNONE, resp.ActionType())
 }
 
 func TestHTTPReqCall_FailedToParseConf(t *testing.T) {
@@ -84,10 +85,10 @@ func TestHTTPReqCall_FailedToParseConf(t *testing.T) {
 	bazConf := builder.CreateString("")
 	prepareConfWithData(builder, bazName, bazConf)
 
-	hrc.ReqStart(builder)
-	hrc.ReqAddId(builder, 233)
-	hrc.ReqAddConfToken(builder, 1)
-	r := hrc.ReqEnd(builder)
+	hreqc.ReqStart(builder)
+	hreqc.ReqAddId(builder, 233)
+	hreqc.ReqAddConfToken(builder, 1)
+	r := hreqc.ReqEnd(builder)
 	builder.Finish(r)
 	out := builder.FinishedBytes()
 
@@ -95,9 +96,9 @@ func TestHTTPReqCall_FailedToParseConf(t *testing.T) {
 	assert.Nil(t, err)
 
 	out = b.FinishedBytes()
-	resp := hrc.GetRootAsResp(out, 0)
+	resp := hreqc.GetRootAsResp(out, 0)
 	assert.Equal(t, uint32(233), resp.Id())
-	assert.Equal(t, hrc.ActionNONE, resp.ActionType())
+	assert.Equal(t, hreqc.ActionNONE, resp.ActionType())
 }
 
 func TestRegisterPlugin(t *testing.T) {
@@ -322,7 +323,7 @@ func TestRegisterPluginConcurrent(t *testing.T) {
 	}
 }
 
-func TestFilter(t *testing.T) {
+func TestRequestFilter(t *testing.T) {
 	InitConfCache(1 * time.Millisecond)
 
 	fooParseConf := func(in []byte) (conf interface{}, err error) {
@@ -352,16 +353,16 @@ func TestFilter(t *testing.T) {
 	prepareConfWithData(builder, fooName, fooConf, barName, barConf)
 
 	res, _ := GetRuleConf(1)
-	hrc.ReqStart(builder)
-	hrc.ReqAddId(builder, 233)
-	hrc.ReqAddConfToken(builder, 1)
-	r := hrc.ReqEnd(builder)
+	hreqc.ReqStart(builder)
+	hreqc.ReqAddId(builder, 233)
+	hreqc.ReqAddConfToken(builder, 1)
+	r := hreqc.ReqEnd(builder)
 	builder.Finish(r)
 	out := builder.FinishedBytes()
 
 	req := inHTTP.CreateRequest(out)
 	resp := inHTTP.CreateReqResponse()
-	filter(res, resp, req)
+	RequestPhase.filter(res, resp, req)
 
 	assert.Equal(t, "bar", resp.Header().Get("foo"))
 	assert.Equal(t, "", req.Header().Get("foo"))
@@ -370,13 +371,13 @@ func TestFilter(t *testing.T) {
 	resp = inHTTP.CreateReqResponse()
 	prepareConfWithData(builder, barName, barConf, fooName, fooConf)
 	res, _ = GetRuleConf(2)
-	filter(res, resp, req)
+	RequestPhase.filter(res, resp, req)
 
 	assert.Equal(t, "bar", resp.Header().Get("foo"))
 	assert.Equal(t, "bar", req.Header().Get("foo"))
 }
 
-func TestFilter_SetRespHeaderDoNotBreakReq(t *testing.T) {
+func TestRequestFilter_SetRespHeaderDoNotBreakReq(t *testing.T) {
 	InitConfCache(1 * time.Millisecond)
 
 	barParseConf := func(in []byte) (conf interface{}, err error) {
@@ -402,22 +403,22 @@ func TestFilter_SetRespHeaderDoNotBreakReq(t *testing.T) {
 	prepareConfWithData(builder, filterSetRespName, filterSetRespConf, barName, barConf)
 
 	res, _ := GetRuleConf(1)
-	hrc.ReqStart(builder)
-	hrc.ReqAddId(builder, 233)
-	hrc.ReqAddConfToken(builder, 1)
-	r := hrc.ReqEnd(builder)
+	hreqc.ReqStart(builder)
+	hreqc.ReqAddId(builder, 233)
+	hreqc.ReqAddConfToken(builder, 1)
+	r := hreqc.ReqEnd(builder)
 	builder.Finish(r)
 	out := builder.FinishedBytes()
 
 	req := inHTTP.CreateRequest(out)
 	resp := inHTTP.CreateReqResponse()
-	filter(res, resp, req)
+	RequestPhase.filter(res, resp, req)
 
 	assert.Equal(t, "bar", req.Header().Get("foo"))
 	assert.Equal(t, "baz", resp.Header().Get("foo"))
 }
 
-func TestFilter_SetRespHeader(t *testing.T) {
+func TestRequestFilter_SetRespHeader(t *testing.T) {
 	InitConfCache(1 * time.Millisecond)
 
 	filterSetRespHeaderParseConf := func(in []byte) (conf interface{}, err error) {
@@ -435,16 +436,107 @@ func TestFilter_SetRespHeader(t *testing.T) {
 	prepareConfWithData(builder, filterSetRespName, filterSetRespConf)
 
 	res, _ := GetRuleConf(1)
-	hrc.ReqStart(builder)
-	hrc.ReqAddId(builder, 233)
-	hrc.ReqAddConfToken(builder, 1)
-	r := hrc.ReqEnd(builder)
+	hreqc.ReqStart(builder)
+	hreqc.ReqAddId(builder, 233)
+	hreqc.ReqAddConfToken(builder, 1)
+	r := hreqc.ReqEnd(builder)
 	builder.Finish(r)
 	out := builder.FinishedBytes()
 
 	req := inHTTP.CreateRequest(out)
 	resp := inHTTP.CreateReqResponse()
-	filter(res, resp, req)
+	RequestPhase.filter(res, resp, req)
 
 	assert.Equal(t, "baz", req.RespHeader().Get("foo"))
+}
+
+func TestHTTPRespCall(t *testing.T) {
+	InitConfCache(10 * time.Millisecond)
+	SetRuleConfInTest(1, RuleConf{})
+
+	builder := flatbuffers.NewBuilder(1024)
+	hrespc.ReqStart(builder)
+	hrespc.ReqAddId(builder, 233)
+	hrespc.ReqAddStatus(builder, 200)
+	hrespc.ReqAddConfToken(builder, 1)
+	r := hrespc.ReqEnd(builder)
+	builder.Finish(r)
+	out := builder.FinishedBytes()
+
+	b, err := HTTPRespCall(out, nil)
+	assert.Nil(t, err)
+
+	out = b.FinishedBytes()
+	resp := hrespc.GetRootAsResp(out, 0)
+	assert.Equal(t, uint32(233), resp.Id())
+	assert.Equal(t, uint16(0), resp.Status())
+}
+
+func TestHTTPRespCall_FailedToParseConf(t *testing.T) {
+	InitConfCache(1 * time.Millisecond)
+
+	bazParseConf := func(in []byte) (conf interface{}, err error) {
+		return nil, errors.New("ouch")
+	}
+	bazFilter := func(conf interface{}, w pkgHTTP.Response) {
+		w.Header().Set("foo", "bar")
+		assert.Equal(t, "foo", conf.(string))
+	}
+
+	RegisterPlugin("baz", bazParseConf, emptyRequestFilter, bazFilter)
+
+	builder := flatbuffers.NewBuilder(1024)
+	bazName := builder.CreateString("baz")
+	bazConf := builder.CreateString("")
+	prepareConfWithData(builder, bazName, bazConf)
+
+	hrespc.ReqStart(builder)
+	hrespc.ReqAddId(builder, 233)
+	hrespc.ReqAddStatus(builder, 200)
+	hrespc.ReqAddConfToken(builder, 1)
+	r := hrespc.ReqEnd(builder)
+	builder.Finish(r)
+	out := builder.FinishedBytes()
+
+	b, err := HTTPRespCall(out, nil)
+	assert.Nil(t, err)
+
+	out = b.FinishedBytes()
+	resp := hrespc.GetRootAsResp(out, 0)
+	assert.Equal(t, uint32(233), resp.Id())
+}
+
+func TestResponseFilter(t *testing.T) {
+	InitConfCache(1 * time.Millisecond)
+
+	fooParseConf := func(in []byte) (conf interface{}, err error) {
+		return "foo", nil
+	}
+	fooFilter := func(conf interface{}, w pkgHTTP.Response) {
+		w.Header().Set("foo", "bar")
+		w.WriteHeader(200)
+		assert.Equal(t, "foo", conf.(string))
+	}
+
+	RegisterPlugin("foo", fooParseConf, emptyRequestFilter, fooFilter)
+
+	builder := flatbuffers.NewBuilder(1024)
+	fooName := builder.CreateString("foo")
+	fooConf := builder.CreateString("foo")
+	prepareConfWithData(builder, fooName, fooConf)
+
+	res, _ := GetRuleConf(1)
+	hrespc.ReqStart(builder)
+	hrespc.ReqAddStatus(builder, 502)
+	hrespc.ReqAddId(builder, 233)
+	hrespc.ReqAddConfToken(builder, 1)
+	r := hrespc.ReqEnd(builder)
+	builder.Finish(r)
+	out := builder.FinishedBytes()
+
+	resp := inHTTP.CreateResponse(out)
+	ResponsePhase.filter(res, resp)
+
+	assert.Equal(t, "bar", resp.Header().Get("foo"))
+	assert.Equal(t, 200, resp.StatusCode())
 }
