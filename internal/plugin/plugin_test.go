@@ -510,19 +510,19 @@ func TestResponseFilter(t *testing.T) {
 	InitConfCache(1 * time.Millisecond)
 
 	fooParseConf := func(in []byte) (conf interface{}, err error) {
-		return "foo", nil
+		return "bee", nil
 	}
 	fooFilter := func(conf interface{}, w pkgHTTP.Response) {
-		w.Header().Set("foo", "bar")
+		w.Header().Set("bee", "bar")
 		w.WriteHeader(200)
-		assert.Equal(t, "foo", conf.(string))
+		assert.Equal(t, "bee", conf.(string))
 	}
 
-	RegisterPlugin("foo", fooParseConf, emptyRequestFilter, fooFilter)
+	RegisterPlugin("bee", fooParseConf, emptyRequestFilter, fooFilter)
 
 	builder := flatbuffers.NewBuilder(1024)
-	fooName := builder.CreateString("foo")
-	fooConf := builder.CreateString("foo")
+	fooName := builder.CreateString("bee")
+	fooConf := builder.CreateString("bee")
 	prepareConfWithData(builder, fooName, fooConf)
 
 	res, _ := GetRuleConf(1)
@@ -537,6 +537,6 @@ func TestResponseFilter(t *testing.T) {
 	resp := inHTTP.CreateResponse(out)
 	ResponsePhase.filter(res, resp)
 
-	assert.Equal(t, "bar", resp.Header().Get("foo"))
+	assert.Equal(t, "bar", resp.Header().Get("bee"))
 	assert.Equal(t, 200, resp.StatusCode())
 }

@@ -19,12 +19,13 @@ package http
 
 import (
 	"bytes"
+	"net/http"
+	"sync"
+
 	pkgHTTP "github.com/apache/apisix-go-plugin-runner/pkg/http"
 	"github.com/api7/ext-plugin-proto/go/A6"
 	hrc "github.com/api7/ext-plugin-proto/go/A6/HTTPRespCall"
 	flatbuffers "github.com/google/flatbuffers/go"
-	"net/http"
-	"sync"
 )
 
 type Response struct {

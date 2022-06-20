@@ -18,13 +18,14 @@
 package http
 
 import (
+	"net/http"
+	"testing"
+
 	"github.com/apache/apisix-go-plugin-runner/internal/util"
 	"github.com/api7/ext-plugin-proto/go/A6"
 	hrc "github.com/api7/ext-plugin-proto/go/A6/HTTPRespCall"
 	flatbuffers "github.com/google/flatbuffers/go"
 	"github.com/stretchr/testify/assert"
-	"net/http"
-	"testing"
 )
 
 type respReqOpt struct {
