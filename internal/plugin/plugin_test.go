@@ -509,21 +509,21 @@ func TestHTTPRespCall_FailedToParseConf(t *testing.T) {
 func TestResponseFilter(t *testing.T) {
 	InitConfCache(1 * time.Millisecond)
 
-	fooParseConf := func(in []byte) (conf interface{}, err error) {
+	beeParseConf := func(in []byte) (conf interface{}, err error) {
 		return "bee", nil
 	}
-	fooFilter := func(conf interface{}, w pkgHTTP.Response) {
+	beeFilter := func(conf interface{}, w pkgHTTP.Response) {
 		w.Header().Set("bee", "bar")
 		w.WriteHeader(200)
 		assert.Equal(t, "bee", conf.(string))
 	}
 
-	RegisterPlugin("bee", fooParseConf, emptyRequestFilter, fooFilter)
+	RegisterPlugin("bee", beeParseConf, emptyRequestFilter, beeFilter)
 
 	builder := flatbuffers.NewBuilder(1024)
-	fooName := builder.CreateString("bee")
-	fooConf := builder.CreateString("bee")
-	prepareConfWithData(builder, fooName, fooConf)
+	beeName := builder.CreateString("bee")
+	beeConf := builder.CreateString("bee")
+	prepareConfWithData(builder, beeName, beeConf)
 
 	res, _ := GetRuleConf(1)
 	hrespc.ReqStart(builder)
