@@ -26,8 +26,8 @@ import (
 	"github.com/onsi/ginkgo/extensions/table"
 )
 
-var _ = ginkgo.Describe("Say Plugin", func() {
-	table.DescribeTable("tries to test say feature.",
+var _ = ginkgo.Describe("ResponseRewrite Plugin", func() {
+	table.DescribeTable("tries to test ResponseRewrite feature.",
 		func(tc tools.HttpTestCase) {
 			tools.RunTestCase(tc)
 		},
@@ -38,11 +38,11 @@ var _ = ginkgo.Describe("Say Plugin", func() {
 			Body: `{
 				"uri":"/test/go/runner/say",
 				"plugins":{
-					"ext-plugin-pre-req":{
+					"ext-plugin-post-resp":{
 						"conf":[
 							{
-								"name":"say",
-								"value":"{\"body\":\"hello\"}"
+								"name":"response-rewrite",
+								"value":"{\"headers\":{\"X-Server-Id\":\"9527\"},\"body\":\"response rewrite\"}"
 							}
 						]
 					}
@@ -57,12 +57,16 @@ var _ = ginkgo.Describe("Say Plugin", func() {
 			Headers:           map[string]string{"X-API-KEY": tools.GetAdminToken()},
 			ExpectStatusRange: httpexpect.Status2xx,
 		}),
-		table.Entry("Should return hello.", tools.HttpTestCase{
+		table.Entry("Should rewrite response.", tools.HttpTestCase{
 			Object:       tools.GetA6Expect(),
 			Method:       http.MethodGet,
 			Path:         "/test/go/runner/say",
-			ExpectBody:   []string{"hello"},
+			ExpectBody:   []string{"response rewrite"},
 			ExpectStatus: http.StatusOK,
+			ExpectHeaders: map[string]string{
+				"X-Resp-A6-Runner": "Go",
+				"X-Server-Id":      "9527",
+			},
 		}),
 	)
 })

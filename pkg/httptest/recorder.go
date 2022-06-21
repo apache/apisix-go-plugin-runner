@@ -27,11 +27,7 @@ import (
 // ResponseRecorder is an implementation of pkgHTTP.Response that
 // records its mutations for later inspection in tests.
 type ResponseRecorder struct {
-	// Code is the HTTP response code set by WriteHeader.
-	//
-	// Note that if a Handler never calls WriteHeader or Write,
-	// this might end up being 0, rather than the implicit
-	// http.StatusOK.
+	// Code is the HTTP response code set at initialization.
 	Code int
 
 	// HeaderMap contains the headers explicitly set by the Handler.
@@ -42,8 +38,8 @@ type ResponseRecorder struct {
 	// If nil, the Writes are silently discarded.
 	Body *bytes.Buffer
 
-	wroteHeader bool
-	id          uint32
+	statusCode int
+	id         uint32
 }
 
 // NewRecorder returns an initialized ResponseRecorder.
@@ -54,20 +50,26 @@ func NewRecorder() *ResponseRecorder {
 	}
 }
 
-// ID is APISIX rpc's id
+// ID is APISIX rpc's id.
 func (rw *ResponseRecorder) ID() uint32 {
 	return rw.id
 }
 
-// StatusCode returns the response code
+// StatusCode returns the response code.
+//
+// Note that if a Handler never calls WriteHeader,
+// this will be initial status code, rather than the implicit
+// http.StatusOK.
 func (rw *ResponseRecorder) StatusCode() int {
-	return rw.Code
+	if rw.statusCode == 0 {
+		return rw.Code
+	}
+
+	return rw.statusCode
 }
 
 // Header implements pkgHTTP.Response. It returns the response
-// headers to mutate within a handler. To test the headers that were
-// written after a handler completes, use the Result method and see
-// the returned Response value's Header.
+// headers to mutate within a handler.
 func (rw *ResponseRecorder) Header() pkgHTTP.Header {
 	m := rw.HeaderMap
 	if m == nil {
@@ -76,8 +78,8 @@ func (rw *ResponseRecorder) Header() pkgHTTP.Header {
 	return m
 }
 
-// Write implements pkgHTTP.Response. The data in buf is written to
-// rw.Body, if not nil.
+// Write implements pkgHTTP.Response.
+// The data in buf is written to rw.Body, if not nil.
 func (rw *ResponseRecorder) Write(buf []byte) (int, error) {
 	if rw.Body == nil {
 		rw.Body = &bytes.Buffer{}
@@ -86,13 +88,13 @@ func (rw *ResponseRecorder) Write(buf []byte) (int, error) {
 }
 
 // WriteHeader implements pkgHTTP.Response.
+// The statusCode is only allowed to be written once.
 func (rw *ResponseRecorder) WriteHeader(code int) {
-	if rw.wroteHeader {
+	if rw.statusCode != 0 {
 		return
 	}
 
-	rw.Code = code
-	rw.wroteHeader = true
+	rw.statusCode = code
 }
 
 type Header struct {

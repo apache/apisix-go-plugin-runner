@@ -27,44 +27,53 @@ import (
 )
 
 func init() {
-	err := plugin.RegisterPlugin(&Say{})
+	err := plugin.RegisterPlugin(&ResponseRewrite{})
 	if err != nil {
-		log.Fatalf("failed to register plugin say: %s", err)
+		log.Fatalf("failed to register plugin response-rewrite: %s", err)
 	}
 }
 
-// Say is a demo to show how to return data directly instead of proxying
-// it to the upstream.
-type Say struct {
+// ResponseRewrite is a demo to show how to rewrite response data.
+type ResponseRewrite struct {
 }
 
-type SayConf struct {
-	Body string `json:"body"`
+type ResponseRewriteConf struct {
+	Status  int               `json:"status"`
+	Headers map[string]string `json:"headers"`
+	Body    string            `json:"body"`
 }
 
-func (p *Say) Name() string {
-	return "say"
+func (p *ResponseRewrite) Name() string {
+	return "response-rewrite"
 }
 
-func (p *Say) ParseConf(in []byte) (interface{}, error) {
-	conf := SayConf{}
+func (p *ResponseRewrite) ParseConf(in []byte) (interface{}, error) {
+	conf := ResponseRewriteConf{}
 	err := json.Unmarshal(in, &conf)
 	return conf, err
 }
 
-func (p *Say) RequestFilter(conf interface{}, w http.ResponseWriter, r pkgHTTP.Request) {
-	body := conf.(SayConf).Body
-	if len(body) == 0 {
-		return
+func (p *ResponseRewrite) RequestFilter(interface{}, http.ResponseWriter, pkgHTTP.Request) {
+}
+
+func (p *ResponseRewrite) ResponseFilter(conf interface{}, w pkgHTTP.Response) {
+	cfg := conf.(ResponseRewriteConf)
+	if cfg.Status > 0 {
+		w.WriteHeader(200)
 	}
 
-	w.Header().Add("X-Resp-A6-Runner", "Go")
-	_, err := w.Write([]byte(body))
+	w.Header().Set("X-Resp-A6-Runner", "Go")
+	if len(cfg.Headers) > 0 {
+		for k, v := range cfg.Headers {
+			w.Header().Set(k, v)
+		}
+	}
+
+	if len(cfg.Body) == 0 {
+		return
+	}
+	_, err := w.Write([]byte(cfg.Body))
 	if err != nil {
 		log.Errorf("failed to write: %s", err)
 	}
-}
-
-func (p *Say) ResponseFilter(interface{}, pkgHTTP.Response) {
-
 }
