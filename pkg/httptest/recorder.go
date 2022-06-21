@@ -87,7 +87,7 @@ func (rw *ResponseRecorder) Write(buf []byte) (int, error) {
 
 // WriteHeader implements pkgHTTP.Response.
 func (rw *ResponseRecorder) WriteHeader(code int) {
-	if rw.wroteHeader != false {
+	if rw.wroteHeader {
 		return
 	}
 
