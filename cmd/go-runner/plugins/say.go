@@ -36,6 +36,9 @@ func init() {
 // Say is a demo to show how to return data directly instead of proxying
 // it to the upstream.
 type Say struct {
+	// Embed the default plugin here,
+	// so that we don't need to reimplement all the methods.
+	plugin.DefaultPlugin
 }
 
 type SayConf struct {
@@ -63,8 +66,4 @@ func (p *Say) RequestFilter(conf interface{}, w http.ResponseWriter, r pkgHTTP.R
 	if err != nil {
 		log.Errorf("failed to write: %s", err)
 	}
-}
-
-func (p *Say) ResponseFilter(interface{}, pkgHTTP.Response) {
-
 }
