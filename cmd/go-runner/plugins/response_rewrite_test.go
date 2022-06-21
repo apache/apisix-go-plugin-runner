@@ -27,7 +27,7 @@ import (
 )
 
 func TestResponseRewrite(t *testing.T) {
-	in := []byte(`{"status":200, "headers":{"X-Server-id":"9527"},"body":"response rewrite"}`)
+	in := []byte(`{"status":200, "headers":{"X-Server-Id":"9527"},"body":"response rewrite"}`)
 	rr := &ResponseRewrite{}
 	conf, err := rr.ParseConf(in)
 	assert.Nil(t, err)
