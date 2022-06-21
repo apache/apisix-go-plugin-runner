@@ -36,6 +36,7 @@ const (
 	RPCPrepareConf
 	RPCHTTPReqCall
 	RPCExtraInfo
+	RPCHTTPRespCall
 )
 
 type RPCResult struct {

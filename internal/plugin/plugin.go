@@ -24,7 +24,8 @@ import (
 	"net/http"
 	"sync"
 
-	hrc "github.com/api7/ext-plugin-proto/go/A6/HTTPReqCall"
+	hreqc "github.com/api7/ext-plugin-proto/go/A6/HTTPReqCall"
+	hrespc "github.com/api7/ext-plugin-proto/go/A6/HTTPRespCall"
 	flatbuffers "github.com/google/flatbuffers/go"
 
 	inHTTP "github.com/apache/apisix-go-plugin-runner/internal/http"
@@ -63,6 +64,9 @@ var (
 	ErrMissingParseConfMethod      = errors.New("missing ParseConf method")
 	ErrMissingRequestFilterMethod  = errors.New("missing RequestFilter method")
 	ErrMissingResponseFilterMethod = errors.New("missing ResponseFilter method")
+
+	RequestPhase  = requestPhase{}
+	ResponsePhase = responsePhase{}
 )
 
 func RegisterPlugin(name string, pc ParseConfFunc, sv RequestFilterFunc, rsv ResponseFilterFunc) error {
@@ -102,7 +106,10 @@ func findPlugin(name string) *pluginOpts {
 	return nil
 }
 
-func filter(conf RuleConf, w *inHTTP.ReqResponse, r pkgHTTP.Request) error {
+type requestPhase struct {
+}
+
+func (ph *requestPhase) filter(conf RuleConf, w *inHTTP.ReqResponse, r *inHTTP.Request) error {
 	for _, c := range conf {
 		plugin := findPlugin(c.Name)
 		if plugin == nil {
@@ -122,7 +129,7 @@ func filter(conf RuleConf, w *inHTTP.ReqResponse, r pkgHTTP.Request) error {
 	return nil
 }
 
-func reportAction(id uint32, req *inHTTP.Request, resp *inHTTP.ReqResponse) *flatbuffers.Builder {
+func (ph *requestPhase) builder(id uint32, resp *inHTTP.ReqResponse, req *inHTTP.Request) *flatbuffers.Builder {
 	builder := util.GetBuilder()
 
 	if resp != nil && resp.FetchChanges(id, builder) {
@@ -133,9 +140,9 @@ func reportAction(id uint32, req *inHTTP.Request, resp *inHTTP.ReqResponse) *fla
 		return builder
 	}
 
-	hrc.RespStart(builder)
-	hrc.RespAddId(builder, id)
-	res := hrc.RespEnd(builder)
+	hreqc.RespStart(builder)
+	hreqc.RespAddId(builder, id)
+	res := hreqc.RespEnd(builder)
 	builder.Finish(res)
 	return builder
 }
@@ -154,12 +161,68 @@ func HTTPReqCall(buf []byte, conn net.Conn) (*flatbuffers.Builder, error) {
 		return nil, err
 	}
 
-	err = filter(conf, resp, req)
+	err = RequestPhase.filter(conf, resp, req)
 	if err != nil {
 		return nil, err
 	}
 
 	id := req.ID()
-	builder := reportAction(id, req, resp)
+	builder := RequestPhase.builder(id, resp, req)
 	return builder, nil
+}
+
+type responsePhase struct {
+}
+
+func (ph *responsePhase) filter(conf RuleConf, w *inHTTP.Response) error {
+	for _, c := range conf {
+		plugin := findPlugin(c.Name)
+		if plugin == nil {
+			log.Warnf("can't find plugin %s, skip", c.Name)
+			continue
+		}
+
+		log.Infof("run plugin %s", c.Name)
+
+		plugin.ResponseFilter(c.Value, w)
+
+		if w.HasChange() {
+			// response is generated, no need to continue
+			break
+		}
+	}
+	return nil
+}
+
+func (ph *responsePhase) builder(id uint32, resp *inHTTP.Response) *flatbuffers.Builder {
+	builder := util.GetBuilder()
+	if resp != nil && resp.FetchChanges(builder) {
+		return builder
+	}
+
+	hrespc.RespStart(builder)
+	hrespc.RespAddId(builder, id)
+	res := hrespc.RespEnd(builder)
+	builder.Finish(res)
+
+	return builder
+}
+
+func HTTPRespCall(buf []byte, conn net.Conn) (*flatbuffers.Builder, error) {
+	resp := inHTTP.CreateResponse(buf)
+	defer inHTTP.ReuseResponse(resp)
+
+	token := resp.ConfToken()
+	conf, err := GetRuleConf(token)
+	if err != nil {
+		return nil, err
+	}
+
+	err = ResponsePhase.filter(conf, resp)
+	if err != nil {
+		return nil, err
+	}
+
+	id := resp.ID()
+	return ResponsePhase.builder(id, resp), nil
 }
