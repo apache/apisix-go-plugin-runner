@@ -1,0 +1,110 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package httptest
+
+import (
+	"bytes"
+	"net/http"
+
+	pkgHTTP "github.com/apache/apisix-go-plugin-runner/pkg/http"
+)
+
+// ResponseRecorder is an implementation of pkgHTTP.Response that
+// records its mutations for later inspection in tests.
+type ResponseRecorder struct {
+	// Code is the HTTP response code set by WriteHeader.
+	//
+	// Note that if a Handler never calls WriteHeader or Write,
+	// this might end up being 0, rather than the implicit
+	// http.StatusOK.
+	Code int
+
+	// HeaderMap contains the headers explicitly set by the Handler.
+	// It is an internal detail.
+	HeaderMap pkgHTTP.Header
+
+	// body is the buffer to which the Handler's Write calls are sent.
+	// If nil, the Writes are silently discarded.
+	Body *bytes.Buffer
+
+	wroteHeader bool
+	id          uint32
+}
+
+// NewRecorder returns an initialized ResponseRecorder.
+func NewRecorder() *ResponseRecorder {
+	return &ResponseRecorder{
+		HeaderMap: newHeader(),
+		Body:      new(bytes.Buffer),
+	}
+}
+
+// ID is APISIX rpc's id
+func (rw *ResponseRecorder) ID() uint32 {
+	return rw.id
+}
+
+// StatusCode returns the response code
+func (rw *ResponseRecorder) StatusCode() int {
+	return rw.Code
+}
+
+// Header implements pkgHTTP.Response. It returns the response
+// headers to mutate within a handler. To test the headers that were
+// written after a handler completes, use the Result method and see
+// the returned Response value's Header.
+func (rw *ResponseRecorder) Header() pkgHTTP.Header {
+	m := rw.HeaderMap
+	if m == nil {
+		rw.HeaderMap = newHeader()
+	}
+	return m
+}
+
+// Write implements pkgHTTP.Response. The data in buf is written to
+// rw.Body, if not nil.
+func (rw *ResponseRecorder) Write(buf []byte) (int, error) {
+	if rw.Body == nil {
+		rw.Body = &bytes.Buffer{}
+	}
+	return rw.Body.Write(buf)
+}
+
+// WriteHeader implements pkgHTTP.Response.
+func (rw *ResponseRecorder) WriteHeader(code int) {
+	if rw.wroteHeader != false {
+		return
+	}
+
+	rw.Code = code
+	rw.wroteHeader = true
+}
+
+type Header struct {
+	http.Header
+}
+
+func (h *Header) View() http.Header {
+	return h.Header
+}
+
+func newHeader() *Header {
+	return &Header{
+		Header: http.Header{},
+	}
+}
