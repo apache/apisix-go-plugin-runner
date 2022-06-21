@@ -65,6 +65,16 @@ func (p *Say) RequestFilter(conf interface{}, w http.ResponseWriter, r pkgHTTP.R
 	}
 }
 
-func (p *Say) ResponseFilter(interface{}, pkgHTTP.Response) {
+func (p *Say) ResponseFilter(conf interface{}, w pkgHTTP.Response) {
+	body := conf.(SayConf).Body
+	if len(body) == 0 {
+		return
+	}
 
+	w.WriteHeader(200)
+	w.Header().Set("X-Resp-A6-Runner", "Go")
+	_, err := w.Write([]byte(body))
+	if err != nil {
+		log.Errorf("failed to write: %s", err)
+	}
 }

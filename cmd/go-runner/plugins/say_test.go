@@ -22,10 +22,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	pkgHTTPTest "github.com/apache/apisix-go-plugin-runner/pkg/httptest"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestSay(t *testing.T) {
+func TestSay_RequestFilter(t *testing.T) {
 	in := []byte(`{"body":"hello"}`)
 	say := &Say{}
 	conf, err := say.ParseConf(in)
@@ -59,4 +60,22 @@ func TestSay_NoBody(t *testing.T) {
 	say.RequestFilter(conf, w, nil)
 	resp := w.Result()
 	assert.Equal(t, "", resp.Header.Get("X-Resp-A6-Runner"))
+}
+
+func TestSay_ResponseFilter(t *testing.T) {
+	in := []byte(`{"body":"response rewrite"}`)
+	say := &Say{}
+	conf, err := say.ParseConf(in)
+	assert.Nil(t, err)
+	assert.Equal(t, "response rewrite", conf.(SayConf).Body)
+
+	w := pkgHTTPTest.NewRecorder()
+	w.Code = 502
+	w.HeaderMap.Set("X-Resp-A6-Runner", "Java")
+	say.ResponseFilter(conf, w)
+
+	body, _ := ioutil.ReadAll(w.Body)
+	assert.Equal(t, 200, w.StatusCode())
+	assert.Equal(t, "Go", w.Header().Get("X-Resp-A6-Runner"))
+	assert.Equal(t, "response rewrite", string(body))
 }

@@ -31,7 +31,7 @@ var _ = ginkgo.Describe("Say Plugin", func() {
 		func(tc tools.HttpTestCase) {
 			tools.RunTestCase(tc)
 		},
-		table.Entry("Config APISIX.", tools.HttpTestCase{
+		table.Entry("Config APISIX, enable ext-plugin-pre-req.", tools.HttpTestCase{
 			Object: tools.GetA6Expect(),
 			Method: http.MethodPut,
 			Path:   "/apisix/admin/routes/1",
@@ -63,6 +63,42 @@ var _ = ginkgo.Describe("Say Plugin", func() {
 			Path:         "/test/go/runner/say",
 			ExpectBody:   []string{"hello"},
 			ExpectStatus: http.StatusOK,
+		}),
+		table.Entry("Config APISIX, enable ext-plugin-post-resp.", tools.HttpTestCase{
+			Object: tools.GetA6Expect(),
+			Method: http.MethodPut,
+			Path:   "/apisix/admin/routes/1",
+			Body: `{
+				"uri":"/test/go/runner/say",
+				"plugins":{
+					"ext-plugin-post-resp":{
+						"conf":[
+							{
+								"name":"say",
+								"value":"{\"body\":\"response rewrite\"}"
+							}
+						]
+					}
+				},
+				"upstream":{
+					"nodes":{
+						"web:8888":1
+					},
+					"type":"roundrobin"
+				}
+			}`,
+			Headers:           map[string]string{"X-API-KEY": tools.GetAdminToken()},
+			ExpectStatusRange: httpexpect.Status2xx,
+		}),
+		table.Entry("Should rewrite response.", tools.HttpTestCase{
+			Object:       tools.GetA6Expect(),
+			Method:       http.MethodGet,
+			Path:         "/test/go/runner/say",
+			ExpectBody:   []string{"response rewrite"},
+			ExpectStatus: http.StatusOK,
+			ExpectHeaders: map[string]string{
+				"X-Resp-A6-Runner": "Go",
+			},
 		}),
 	)
 })
