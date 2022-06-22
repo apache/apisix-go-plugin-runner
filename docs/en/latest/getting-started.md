@@ -164,11 +164,11 @@ func (p *ResponseRewrite) ResponseFilter(conf interface{}, w pkgHTTP.Response) {
 }
 ```
 
-We can see that `ResponseFilter` will rewrite the status, header and response body of the response phase according to the configuration.
+We can see that `ResponseFilter` will rewrite the status, header, and response body of the response phase according to the configuration.
+
 In addition, we can also get the status and headers in the original response through `pkgHTTP.Response`.
 
-For the `pkgHTTP.Request` and `pkgHTTP.Response`, you can refer to the API documentation provided by the Go Runner SDK:
-https://pkg.go.dev/github.com/apache/apisix-go-plugin-runner
+For the `pkgHTTP.Request` and `pkgHTTP.Response`, you can refer to the [API documentation](https://pkg.go.dev/github.com/apache/apisix-go-plugin-runner) provided by the Go Runner SDK.
 
 After building the application (`make build` in the example), we need to set some environment variables at runtime:
 
