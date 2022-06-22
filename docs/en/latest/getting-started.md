@@ -132,7 +132,42 @@ We can see that the RequestFilter takes the value of the body set in the configu
 (respond directly in the plugin), it will response directly in the APISIX without touching the upstream. We can also set response headers in the plugin and touch the upstream
 at the same time by set RespHeader in `pkgHTTP.Request`.
 
-For the `pkgHTTP.Request`, you can refer to the API documentation provided by the Go Runner SDK:
+`ResponseFilter` supports rewriting the response during the response phase, we can see an example of its use in the ResponseRewrite plugin:
+
+```go
+type ResponseRewriteConf struct {
+    Status  int               `json:"status"`
+    Headers map[string]string `json:"headers"`
+    Body    string            `json:"body"`
+}
+
+func (p *ResponseRewrite) ResponseFilter(conf interface{}, w pkgHTTP.Response) {
+	cfg := conf.(ResponseRewriteConf)
+	if cfg.Status > 0 {
+		w.WriteHeader(200)
+	}
+
+	w.Header().Set("X-Resp-A6-Runner", "Go")
+	if len(cfg.Headers) > 0 {
+		for k, v := range cfg.Headers {
+			w.Header().Set(k, v)
+		}
+	}
+
+	if len(cfg.Body) == 0 {
+		return
+	}
+	_, err := w.Write([]byte(cfg.Body))
+	if err != nil {
+		log.Errorf("failed to write: %s", err)
+	}
+}
+```
+
+We can see that `ResponseFilter` will rewrite the status, header and response body of the response phase according to the configuration.
+In addition, we can also get the status and headers in the original response through `pkgHTTP.Response`.
+
+For the `pkgHTTP.Request` and `pkgHTTP.Response`, you can refer to the API documentation provided by the Go Runner SDK:
 https://pkg.go.dev/github.com/apache/apisix-go-plugin-runner
 
 After building the application (`make build` in the example), we need to set some environment variables at runtime:
@@ -159,8 +194,9 @@ When you configure a plugin runner in APISIX, APISIX will treat the plugin runne
 
 If you configure the ext-plugin-* plugin for a given route, a request to hit that route will trigger APISIX to make an RPC call to the plugin runner via a unix socket. The call is broken down into two phases.
 
-- ext-plugin-pre-req: before executing most of the APISIX built-in plugins (Lua language plugins)
-- ext-plugin-post-req: after the execution of the APISIX built-in plugins (Lua language plugins)
+- ext-plugin-pre-req: executed in the request phase, before most of the APISIX built-in plugins (Lua language plugins)
+- ext-plugin-post-req: executed in the request phase, after most of the APISIX built-in plugins (Lua language plugins)
+- ext-plugin-post-resp: executed in the response phase, after most of the APISIX built-in plugins (Lua language plugins)
 
 Configure the timing of plugin runner execution as needed.
 
