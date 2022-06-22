@@ -194,9 +194,9 @@ When you configure a plugin runner in APISIX, APISIX will treat the plugin runne
 
 If you configure the ext-plugin-* plugin for a given route, a request to hit that route will trigger APISIX to make an RPC call to the plugin runner via a unix socket. The call is broken down into two phases.
 
-- ext-plugin-pre-req: executed in the request phase, before most of the APISIX built-in plugins (Lua language plugins)
-- ext-plugin-post-req: executed in the request phase, after most of the APISIX built-in plugins (Lua language plugins)
-- ext-plugin-post-resp: executed in the response phase, after most of the APISIX built-in plugins (Lua language plugins)
+- ext-plugin-pre-req: executed during handling the request, before most of the APISIX built-in plugins (Lua language plugins)
+- ext-plugin-post-req: executed during handling the request, after most of the APISIX built-in plugins (Lua language plugins)
+- ext-plugin-post-resp: executed during handling the response, after most of the APISIX built-in plugins (Lua language plugins)
 
 Configure the timing of plugin runner execution as needed.
 
