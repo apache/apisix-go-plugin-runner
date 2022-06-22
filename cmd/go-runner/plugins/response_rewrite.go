@@ -19,7 +19,6 @@ package plugins
 
 import (
 	"encoding/json"
-	"net/http"
 
 	pkgHTTP "github.com/apache/apisix-go-plugin-runner/pkg/http"
 	"github.com/apache/apisix-go-plugin-runner/pkg/log"
@@ -35,6 +34,9 @@ func init() {
 
 // ResponseRewrite is a demo to show how to rewrite response data.
 type ResponseRewrite struct {
+	// Embed the default plugin here,
+	// so that we don't need to reimplement all the methods.
+	plugin.DefaultPlugin
 }
 
 type ResponseRewriteConf struct {
@@ -51,9 +53,6 @@ func (p *ResponseRewrite) ParseConf(in []byte) (interface{}, error) {
 	conf := ResponseRewriteConf{}
 	err := json.Unmarshal(in, &conf)
 	return conf, err
-}
-
-func (p *ResponseRewrite) RequestFilter(interface{}, http.ResponseWriter, pkgHTTP.Request) {
 }
 
 func (p *ResponseRewrite) ResponseFilter(conf interface{}, w pkgHTTP.Response) {

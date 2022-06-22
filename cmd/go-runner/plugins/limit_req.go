@@ -35,6 +35,9 @@ func init() {
 
 // LimitReq is a demo for a real world plugin
 type LimitReq struct {
+	// Embed the default plugin here,
+	// so that we don't need to reimplement all the methods.
+	plugin.DefaultPlugin
 }
 
 type LimitReqConf struct {
@@ -74,8 +77,4 @@ func (p *LimitReq) RequestFilter(conf interface{}, w http.ResponseWriter, r pkgH
 		return
 	}
 	time.Sleep(rs.Delay())
-}
-
-func (p *LimitReq) ResponseFilter(interface{}, pkgHTTP.Response) {
-
 }

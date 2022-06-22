@@ -41,6 +41,9 @@ func init() {
 
 // FaultInjection is used in the benchmark
 type FaultInjection struct {
+	// Embed the default plugin here,
+	// so that we don't need to reimplement all the methods.
+	plugin.DefaultPlugin
 }
 
 type FaultInjectionConf struct {
@@ -93,8 +96,4 @@ func (p *FaultInjection) RequestFilter(conf interface{}, w http.ResponseWriter, 
 	if err != nil {
 		log.Errorf("failed to write: %s", err)
 	}
-}
-
-func (p *FaultInjection) ResponseFilter(interface{}, pkgHTTP.Response) {
-
 }

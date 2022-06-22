@@ -52,3 +52,9 @@ type Plugin interface {
 func RegisterPlugin(p Plugin) error {
 	return plugin.RegisterPlugin(p.Name(), p.ParseConf, p.RequestFilter, p.ResponseFilter)
 }
+
+// DefaultPlugin provides the no-op implementation of the Plugin interface.
+type DefaultPlugin struct{}
+
+func (*DefaultPlugin) RequestFilter(interface{}, http.ResponseWriter, pkgHTTP.Request) {}
+func (*DefaultPlugin) ResponseFilter(interface{}, pkgHTTP.Response)                    {}
