@@ -38,7 +38,7 @@ title: Changelog
 
 ### Change
 
-- change: rename http.Response to http.ReqResponse  [#88](https://github.com/apache/apisix-go-plugin-runner/pull/88)
+- change: add DefaultPlugin so that we don't need to reimplement all the methods [#92](https://github.com/apache/apisix-go-plugin-runner/pull/92)
 
 ## 0.3.0
 
