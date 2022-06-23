@@ -23,9 +23,22 @@ title: Changelog
 
 ## Table of Contents
 
+- [0.4.0](#040)
 - [0.3.0](#030)
 - [0.2.0](#020)
 - [0.1.0](#010)
+
+## 0.4.0
+
+### Feature
+
+- :sunrise: feat: add response-rewrite plugin [#91](https://github.com/apache/apisix-go-plugin-runner/pull/91)
+- :sunrise: feat: support response filter for plugin [#90](https://github.com/apache/apisix-go-plugin-runner/pull/90)
+- :sunrise: feat: add debugf function [#87](https://github.com/apache/apisix-go-plugin-runner/pull/87)
+
+### Change
+
+- change: add DefaultPlugin so that we don't need to reimplement all the methods [#92](https://github.com/apache/apisix-go-plugin-runner/pull/92)
 
 ## 0.3.0
 

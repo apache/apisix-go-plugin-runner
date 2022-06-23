@@ -23,8 +23,21 @@ title: Getting started
 
 ## Prerequisites
 
+### Compatibility with Golang
 * Go (>= 1.15)
-* APISIX (>= 2.13.0)
+
+### Compatibility with Apache APISIX
+
+The following table describes the compatibility between apisix-go-plugin-runner and
+[Apache APISIX](https://apisix.apache.org).
+
+| apisix-go-plugin-runner |                         Apache APISIX |
+|------------------------:|--------------------------------------:|
+|                `master` | `>= 2.14.1`, `2.14.1` is recommended. |
+|                 `0.4.0` | `>= 2.14.1`, `2.14.1` is recommended. |
+|                 `0.3.0` | `>= 2.13.0`, `2.13.0` is recommended. |
+|                 `0.2.0` |   `>= 2.9.0`, `2.9.0` is recommended. |
+|                 `0.1.0` |   `>= 2.7.0`, `2.7.0` is recommended. |
 
 ## Installation
 
