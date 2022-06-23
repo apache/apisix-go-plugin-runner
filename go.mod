@@ -17,5 +17,6 @@ require (
 
 replace (
 	github.com/miekg/dns v1.0.14 => github.com/miekg/dns v1.1.25
+	// github.com/thediveo/enumflag@v0.10.1 depends on github.com/spf13/cobra@v0.0.7
 	github.com/spf13/cobra v0.0.7 => github.com/spf13/cobra v1.2.1
 )
