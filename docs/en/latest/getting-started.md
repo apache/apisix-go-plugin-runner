@@ -28,7 +28,7 @@ title: Getting started
 
 ### Compatibility with Apache APISIX
 
-The following table describes the compatibility between apisix-ingress-controller and
+The following table describes the compatibility between apisix-go-plugin-runner and
 [Apache APISIX](https://apisix.apache.org).
 
 | apisix-go-plugin-runner |                         Apache APISIX |
