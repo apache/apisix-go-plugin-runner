@@ -29,6 +29,7 @@ import (
 	hrc "github.com/api7/ext-plugin-proto/go/A6/HTTPReqCall"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/apache/apisix-go-plugin-runner/internal/plugin"
 	"github.com/apache/apisix-go-plugin-runner/internal/util"
 )
 
@@ -52,10 +53,22 @@ func TestGetConfCacheTTL(t *testing.T) {
 }
 
 func TestDispatchRPC_UnknownType(t *testing.T) {
-	bd := dispatchRPC(126, []byte(""), nil)
+	bd, ty := dispatchRPC(126, []byte(""), nil)
 	err := UnknownType{126}
 	expectBd := ReportError(err)
 	assert.Equal(t, expectBd.FinishedBytes(), bd.FinishedBytes())
+	assert.Equal(t, ty, byte(util.RPCError))
+}
+
+func TestDispatchRPC_KnownType(t *testing.T) {
+	bd := util.GetBuilder()
+	hrc.ReqStart(bd)
+	hrc.ReqAddConfToken(bd, 1)
+	r := hrc.ReqEnd(bd)
+	bd.Finish(r)
+
+	_, ty := dispatchRPC(util.RPCHTTPReqCall, bd.FinishedBytes(), nil)
+	assert.Equal(t, ty, byte(util.RPCError))
 }
 
 func TestDispatchRPC_OutTooLarge(t *testing.T) {
@@ -116,4 +129,8 @@ func TestRun(t *testing.T) {
 
 	_, err = os.Stat(path)
 	assert.True(t, os.IsNotExist(err))
+}
+
+func init() {
+	plugin.InitConfCache(time.Second)
 }
