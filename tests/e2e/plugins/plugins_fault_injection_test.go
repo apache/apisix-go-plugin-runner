@@ -32,7 +32,7 @@ var _ = ginkgo.Describe("Fault-injection plugin", func() {
 			tools.RunTestCase(tc)
 		},
 		table.Entry("Config APISIX.", tools.HttpTestCase{
-			Object: tools.GetA6Expect(),
+			Object: tools.GetA6CPExpect(),
 			Method: http.MethodPut,
 			Path:   "/apisix/admin/routes/1",
 			Body: `{
@@ -58,7 +58,7 @@ var _ = ginkgo.Describe("Fault-injection plugin", func() {
 			ExpectStatusRange: httpexpect.Status2xx,
 		}),
 		table.Entry("Test if fault-injection plugin work.", tools.HttpTestCase{
-			Object:       tools.GetA6Expect(),
+			Object:       tools.GetA6DPExpect(),
 			Method:       http.MethodGet,
 			Path:         "/test/go/runner/faultinjection",
 			ExpectBody:   []string{"hello"},
