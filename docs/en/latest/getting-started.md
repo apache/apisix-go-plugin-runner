@@ -259,6 +259,8 @@ We can see that the interface returns hello and does not access anything upstrea
 
 ### Setting up APISIX (running)
 
+#### Setting up directly
+
 Here's an example of go-runner, you just need to configure the command line to run it inside ext-plugin:
 
 ```
@@ -270,3 +272,27 @@ ext-plugin:
 APISIX will treat the plugin runner as a child process of its own, managing its entire lifecycle.
 
 APISIX will automatically assign a unix socket address for the runner to listen to when it starts. environment variables do not need to be set manually.
+
+#### Setting up in container
+
+First you need to prepare the go-runner binary. Use this command:
+
+```shell
+make build
+```
+
+:::note
+When you use a Linux distribution such as Alpine Linux that is not based on standard glibc, you must turn off Golang's CGO support via the `CGO_ENABLED=0` environment variable to avoid libc ABI incompatibilities. 
+
+If you want to use CGO, then you must build the binaries using the Go compiler and the C compiler in the same Linux distribution.
+:::
+
+Then you need to rebuild the container image to include the go-runner binary. You can use the following Dockerfile:
+
+```
+FROM apache/apisix:2.15.0-debian
+
+COPY ./go-runner /usr/local/apisix-go-plugin-runner/go-runner
+```
+
+Finally, you can push and run your custom image, just configure the binary path and commands in the configuration file via `ext-plugin.cmd` to start APISIX with go plugin runner.
