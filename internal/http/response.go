@@ -19,10 +19,16 @@ package http
 
 import (
 	"bytes"
+	"encoding/binary"
+	"github.com/apache/apisix-go-plugin-runner/internal/util"
+	"github.com/apache/apisix-go-plugin-runner/pkg/common"
+	ei "github.com/api7/ext-plugin-proto/go/A6/ExtraInfo"
+	"net"
 	"net/http"
 	"sync"
 
 	pkgHTTP "github.com/apache/apisix-go-plugin-runner/pkg/http"
+	"github.com/apache/apisix-go-plugin-runner/pkg/log"
 	"github.com/api7/ext-plugin-proto/go/A6"
 	hrc "github.com/api7/ext-plugin-proto/go/A6/HTTPRespCall"
 	flatbuffers "github.com/google/flatbuffers/go"
@@ -31,12 +37,73 @@ import (
 type Response struct {
 	r *hrc.Req
 
+	conn            net.Conn
+	extraInfoHeader []byte
+
 	hdr    *Header
 	rawHdr http.Header
 
 	statusCode int
 
 	body *bytes.Buffer
+
+	vars map[string][]byte
+	// a6Body is read-only
+	a6Body []byte
+}
+
+func (r *Response) askExtraInfo(builder *flatbuffers.Builder,
+	infoType ei.Info, info flatbuffers.UOffsetT) ([]byte, error) {
+
+	ei.ReqStart(builder)
+	ei.ReqAddInfoType(builder, infoType)
+	ei.ReqAddInfo(builder, info)
+	eiRes := ei.ReqEnd(builder)
+	builder.Finish(eiRes)
+
+	c := r.conn
+	if len(r.extraInfoHeader) == 0 {
+		r.extraInfoHeader = make([]byte, util.HeaderLen)
+	}
+	header := r.extraInfoHeader
+
+	out := builder.FinishedBytes()
+	size := len(out)
+	binary.BigEndian.PutUint32(header, uint32(size))
+	header[0] = util.RPCExtraInfo
+
+	n, err := c.Write(header)
+	if err != nil {
+		util.WriteErr(n, err)
+		return nil, common.ErrConnClosed
+	}
+
+	n, err = c.Write(out)
+	if err != nil {
+		util.WriteErr(n, err)
+		return nil, common.ErrConnClosed
+	}
+
+	n, err = c.Read(header)
+	if util.ReadErr(n, err, util.HeaderLen) {
+		return nil, common.ErrConnClosed
+	}
+
+	ty := header[0]
+	header[0] = 0
+	length := binary.BigEndian.Uint32(header)
+
+	log.Infof("receive rpc type: %d data length: %d", ty, length)
+
+	buf := make([]byte, length)
+	n, err = c.Read(buf)
+	if util.ReadErr(n, err, int(length)) {
+		return nil, common.ErrConnClosed
+	}
+
+	resp := ei.GetRootAsResp(buf, 0)
+	res := resp.ResultBytes()
+	return res, nil
 }
 
 func (r *Response) ID() uint32 {
@@ -73,6 +140,51 @@ func (r *Response) Write(b []byte) (int, error) {
 	}
 
 	return r.body.Write(b)
+}
+
+func (r *Response) Var(name string) ([]byte, error) {
+	if r.vars == nil {
+		r.vars = map[string][]byte{}
+	}
+
+	var v []byte
+	var found bool
+
+	if v, found = r.vars[name]; !found {
+		var err error
+
+		builder := util.GetBuilder()
+		varName := builder.CreateString(name)
+		ei.VarStart(builder)
+		ei.VarAddName(builder, varName)
+		varInfo := ei.VarEnd(builder)
+		v, err = r.askExtraInfo(builder, ei.InfoVar, varInfo)
+		util.PutBuilder(builder)
+
+		if err != nil {
+			return nil, err
+		}
+
+		r.vars[name] = v
+	}
+	return v, nil
+}
+
+func (r *Response) Read() ([]byte, error) {
+	if len(r.a6Body) > 0 {
+		return r.a6Body, nil
+	}
+
+	builder := util.GetBuilder()
+	ei.ReqBodyStart(builder)
+	bodyInfo := ei.ReqBodyEnd(builder)
+	v, err := r.askExtraInfo(builder, ei.InfoRespBody, bodyInfo)
+	if err != nil {
+		return nil, err
+	}
+
+	r.a6Body = v
+	return v, nil
 }
 
 func (r *Response) WriteHeader(statusCode int) {
@@ -158,10 +270,16 @@ func (r *Response) FetchChanges(builder *flatbuffers.Builder) bool {
 	return true
 }
 
+func (r *Response) BindConn(c net.Conn) {
+	r.conn = c
+}
+
 func (r *Response) Reset() {
 	r.body = nil
 	r.statusCode = 0
 	r.hdr = nil
+	r.conn = nil
+	r.vars = nil
 }
 
 var respPool = sync.Pool{

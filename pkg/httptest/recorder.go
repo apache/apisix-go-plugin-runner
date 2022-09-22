@@ -34,9 +34,14 @@ type ResponseRecorder struct {
 	// It is an internal detail.
 	HeaderMap pkgHTTP.Header
 
-	// body is the buffer to which the Handler's Write calls are sent.
+	// Body is the buffer to which the Handler's Write calls are sent.
 	// If nil, the Writes are silently discarded.
 	Body *bytes.Buffer
+
+	// A6Body is the response body received by APISIX from upstream.
+	A6Body []byte
+
+	Vars map[string][]byte
 
 	statusCode int
 	id         uint32
@@ -85,6 +90,22 @@ func (rw *ResponseRecorder) Write(buf []byte) (int, error) {
 		rw.Body = &bytes.Buffer{}
 	}
 	return rw.Body.Write(buf)
+}
+
+// Var implements pkgHTTP.Response.
+func (rw *ResponseRecorder) Var(key string) ([]byte, error) {
+	if rw.Vars == nil {
+		rw.Vars = make(map[string][]byte)
+	}
+	return rw.Vars[key], nil
+}
+
+// Read implements pkgHTTP.Response.
+func (rw *ResponseRecorder) Read() ([]byte, error) {
+	if rw.A6Body == nil {
+		rw.A6Body = make([]byte, 0)
+	}
+	return rw.A6Body, nil
 }
 
 // WriteHeader implements pkgHTTP.Response.

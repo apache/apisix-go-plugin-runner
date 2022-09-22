@@ -43,8 +43,8 @@ github.com/ReneKroon/ttlcache/v2 v2.4.0 h1:KywGhjik+ZFTDXMNLiPECSzmdx2yNvAlDNKES
 github.com/ReneKroon/ttlcache/v2 v2.4.0/go.mod h1:zbo6Pv/28e21Z8CzzqgYRArQYGYtjONRxaAKGxzQvG4=
 github.com/alvaroloes/enumer v1.1.2/go.mod h1:FxrjvuXoDAx9isTJrv4c+T410zFi0DtXIT0m65DJ+Wo=
 github.com/antihax/optional v1.0.0/go.mod h1:uupD/76wgC+ih3iEmQUL+0Ugr19nfwCT1kdvxnR2qWY=
-github.com/api7/ext-plugin-proto v0.5.0 h1:YcqPfluhA6qkFO8tZX2fPyKNgfB/s+MF/dK+k4QnzzY=
-github.com/api7/ext-plugin-proto v0.5.0/go.mod h1:8dbdAgCESeqwZ0IXirbjLbshEntmdrAX3uet+LW3jVU=
+github.com/api7/ext-plugin-proto v0.6.0 h1:xmgcKwWRiM9EpBIs1wYJ7Ife/YnLl4IL2NEy4417g60=
+github.com/api7/ext-plugin-proto v0.6.0/go.mod h1:8dbdAgCESeqwZ0IXirbjLbshEntmdrAX3uet+LW3jVU=
 github.com/armon/circbuf v0.0.0-20150827004946-bbbad097214e/go.mod h1:3U/XgcO3hCbHZ8TKRvWD2dDTCfh9M9ya+I9JpbB7O8o=
 github.com/armon/go-metrics v0.0.0-20180917152333-f0300d1749da/go.mod h1:Q73ZrmVTwzkszR9V5SSuryQ31EELlFMUz1kKyl939pY=
 github.com/armon/go-radix v0.0.0-20180808171621-7fddfc383310/go.mod h1:ufUuZ+zHj4x4TnLV4JWEpy2hxWSpsRywHrMgIH9cCH8=
