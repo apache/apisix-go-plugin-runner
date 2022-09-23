@@ -20,12 +20,13 @@ package http
 import (
 	"bytes"
 	"encoding/binary"
-	"github.com/apache/apisix-go-plugin-runner/internal/util"
-	"github.com/apache/apisix-go-plugin-runner/pkg/common"
-	ei "github.com/api7/ext-plugin-proto/go/A6/ExtraInfo"
 	"net"
 	"net/http"
 	"sync"
+
+	"github.com/apache/apisix-go-plugin-runner/internal/util"
+	"github.com/apache/apisix-go-plugin-runner/pkg/common"
+	ei "github.com/api7/ext-plugin-proto/go/A6/ExtraInfo"
 
 	pkgHTTP "github.com/apache/apisix-go-plugin-runner/pkg/http"
 	"github.com/apache/apisix-go-plugin-runner/pkg/log"

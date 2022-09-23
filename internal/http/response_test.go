@@ -19,11 +19,12 @@ package http
 
 import (
 	"encoding/binary"
-	"github.com/apache/apisix-go-plugin-runner/pkg/common"
-	ei "github.com/api7/ext-plugin-proto/go/A6/ExtraInfo"
 	"net"
 	"net/http"
 	"testing"
+
+	"github.com/apache/apisix-go-plugin-runner/pkg/common"
+	ei "github.com/api7/ext-plugin-proto/go/A6/ExtraInfo"
 
 	"github.com/apache/apisix-go-plugin-runner/internal/util"
 	"github.com/api7/ext-plugin-proto/go/A6"
