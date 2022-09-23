@@ -32,7 +32,7 @@ var _ = ginkgo.Describe("Say Plugin", func() {
 			tools.RunTestCase(tc)
 		},
 		table.Entry("Config APISIX.", tools.HttpTestCase{
-			Object: tools.GetA6Expect(),
+			Object: tools.GetA6CPExpect(),
 			Method: http.MethodPut,
 			Path:   "/apisix/admin/routes/1",
 			Body: `{
@@ -58,7 +58,7 @@ var _ = ginkgo.Describe("Say Plugin", func() {
 			ExpectStatusRange: httpexpect.Status2xx,
 		}),
 		table.Entry("Should return hello.", tools.HttpTestCase{
-			Object:       tools.GetA6Expect(),
+			Object:       tools.GetA6DPExpect(),
 			Method:       http.MethodGet,
 			Path:         "/test/go/runner/say",
 			ExpectBody:   []string{"hello"},
