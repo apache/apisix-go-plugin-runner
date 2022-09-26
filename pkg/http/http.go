@@ -102,12 +102,15 @@ type Response interface {
 	// pkg/common.ErrConnClosed type is returned.
 	Var(name string) ([]byte, error)
 
-	// Read returns HTTP response body
+	// ReadBody returns origin HTTP response body
 	//
 	// To fetch the value, the runner will look up the request's cache first. If not found,
 	// the runner will ask it from the APISIX. If the RPC call is failed, an error in
 	// pkg/common.ErrConnClosed type is returned.
-	Read() ([]byte, error)
+	//
+	// It was not named `Body`
+	// because `Body` was already occupied in earlier interface implementations.
+	ReadBody() ([]byte, error)
 
 	// Write rewrites the origin response data.
 	//

@@ -171,7 +171,7 @@ func (r *Response) Var(name string) ([]byte, error) {
 	return v, nil
 }
 
-func (r *Response) Read() ([]byte, error) {
+func (r *Response) ReadBody() ([]byte, error) {
 	if len(r.a6Body) > 0 {
 		return r.a6Body, nil
 	}

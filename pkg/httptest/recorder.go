@@ -100,8 +100,8 @@ func (rw *ResponseRecorder) Var(key string) ([]byte, error) {
 	return rw.Vars[key], nil
 }
 
-// Read implements pkgHTTP.Response.
-func (rw *ResponseRecorder) Read() ([]byte, error) {
+// ReadBody implements pkgHTTP.Response.
+func (rw *ResponseRecorder) ReadBody() ([]byte, error) {
 	if rw.A6Body == nil {
 		rw.A6Body = make([]byte, 0)
 	}
