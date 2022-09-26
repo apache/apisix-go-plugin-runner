@@ -357,7 +357,7 @@ func TestRead(t *testing.T) {
 		}
 	}()
 
-	v, err := r.Read()
+	v, err := r.ReadBody()
 	assert.Nil(t, err)
 	assert.Equal(t, "Hello, Go Runner", string(v))
 }
