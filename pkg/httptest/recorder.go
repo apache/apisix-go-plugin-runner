@@ -38,8 +38,8 @@ type ResponseRecorder struct {
 	// If nil, the Writes are silently discarded.
 	Body *bytes.Buffer
 
-	// A6Body is the response body received by APISIX from upstream.
-	A6Body []byte
+	// OriginBody is the response body received by APISIX from upstream.
+	OriginBody []byte
 
 	Vars map[string][]byte
 
@@ -102,10 +102,10 @@ func (rw *ResponseRecorder) Var(key string) ([]byte, error) {
 
 // ReadBody implements pkgHTTP.Response.
 func (rw *ResponseRecorder) ReadBody() ([]byte, error) {
-	if rw.A6Body == nil {
-		rw.A6Body = make([]byte, 0)
+	if rw.OriginBody == nil {
+		rw.OriginBody = make([]byte, 0)
 	}
-	return rw.A6Body, nil
+	return rw.OriginBody, nil
 }
 
 // WriteHeader implements pkgHTTP.Response.

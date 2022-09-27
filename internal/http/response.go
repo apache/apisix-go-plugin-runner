@@ -49,8 +49,8 @@ type Response struct {
 	body *bytes.Buffer
 
 	vars map[string][]byte
-	// a6Body is read-only
-	a6Body []byte
+	// originBody is read-only
+	originBody []byte
 }
 
 func (r *Response) askExtraInfo(builder *flatbuffers.Builder,
@@ -172,19 +172,21 @@ func (r *Response) Var(name string) ([]byte, error) {
 }
 
 func (r *Response) ReadBody() ([]byte, error) {
-	if len(r.a6Body) > 0 {
-		return r.a6Body, nil
+	if len(r.originBody) > 0 {
+		return r.originBody, nil
 	}
 
 	builder := util.GetBuilder()
 	ei.ReqBodyStart(builder)
 	bodyInfo := ei.ReqBodyEnd(builder)
 	v, err := r.askExtraInfo(builder, ei.InfoRespBody, bodyInfo)
+	util.PutBuilder(builder)
+
 	if err != nil {
 		return nil, err
 	}
 
-	r.a6Body = v
+	r.originBody = v
 	return v, nil
 }
 
@@ -281,6 +283,7 @@ func (r *Response) Reset() {
 	r.hdr = nil
 	r.conn = nil
 	r.vars = nil
+	r.originBody = nil
 }
 
 var respPool = sync.Pool{
