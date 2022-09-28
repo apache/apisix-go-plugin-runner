@@ -111,7 +111,7 @@ func (p *ResponseRewrite) ResponseFilter(conf interface{}, w pkgHTTP.Response) {
 				}
 			}
 		}
-		if matched == true {
+		if matched {
 			body = originBody
 			goto write
 		}
