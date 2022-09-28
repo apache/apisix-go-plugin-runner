@@ -18,11 +18,13 @@
 package plugins
 
 import (
+	"bytes"
 	"encoding/json"
-
+	"fmt"
 	pkgHTTP "github.com/apache/apisix-go-plugin-runner/pkg/http"
 	"github.com/apache/apisix-go-plugin-runner/pkg/log"
 	"github.com/apache/apisix-go-plugin-runner/pkg/plugin"
+	"regexp"
 )
 
 func init() {
@@ -30,6 +32,14 @@ func init() {
 	if err != nil {
 		log.Fatalf("failed to register plugin response-rewrite: %s", err)
 	}
+}
+
+type RegexFilter struct {
+	Regex   string `json:"regex"`
+	Scope   string `json:"scope"`
+	Replace string `json:"replace"`
+
+	regexComplied *regexp.Regexp
 }
 
 // ResponseRewrite is a demo to show how to rewrite response data.
@@ -43,6 +53,7 @@ type ResponseRewriteConf struct {
 	Status  int               `json:"status"`
 	Headers map[string]string `json:"headers"`
 	Body    string            `json:"body"`
+	Filters []RegexFilter     `json:"filters"`
 }
 
 func (p *ResponseRewrite) Name() string {
@@ -52,7 +63,18 @@ func (p *ResponseRewrite) Name() string {
 func (p *ResponseRewrite) ParseConf(in []byte) (interface{}, error) {
 	conf := ResponseRewriteConf{}
 	err := json.Unmarshal(in, &conf)
-	return conf, err
+	if err != nil {
+		return nil, err
+	}
+	for i := 0; i < len(conf.Filters); i++ {
+		if reg, err := regexp.Compile(conf.Filters[i].Regex); err != nil {
+			return nil, fmt.Errorf("failed to compile regex `%s`: %v",
+				conf.Filters[i].Regex, err)
+		} else {
+			conf.Filters[i].regexComplied = reg
+		}
+	}
+	return conf, nil
 }
 
 func (p *ResponseRewrite) ResponseFilter(conf interface{}, w pkgHTTP.Response) {
@@ -68,10 +90,39 @@ func (p *ResponseRewrite) ResponseFilter(conf interface{}, w pkgHTTP.Response) {
 		}
 	}
 
+	body := []byte(cfg.Body)
+	if len(cfg.Filters) > 0 {
+		originBody, err := w.ReadBody()
+		if err != nil {
+			log.Errorf("failed to read response body: ", err)
+			return
+		}
+		matched := false
+		for i := 0; i < len(cfg.Filters); i++ {
+			f := cfg.Filters[i]
+			found := f.regexComplied.Find(originBody)
+			if found != nil {
+				matched = true
+				if f.Scope == "once" {
+					originBody = bytes.Replace(originBody, found, []byte(f.Replace), 1)
+				} else if f.Scope == "global" {
+					originBody = bytes.ReplaceAll(originBody, found, []byte(f.Replace))
+				}
+			}
+		}
+		if matched == true {
+			body = originBody
+			goto write
+		}
+		// When configuring the Filters field, the Body field will be invalid.
+		return
+	}
+
 	if len(cfg.Body) == 0 {
 		return
 	}
-	_, err := w.Write([]byte(cfg.Body))
+write:
+	_, err := w.Write(body)
 	if err != nil {
 		log.Errorf("failed to write: %s", err)
 	}

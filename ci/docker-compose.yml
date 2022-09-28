@@ -49,14 +49,12 @@ services:
       apisix:
 
   web:
-    image: mendhak/http-https-echo
-    environment:
-      HTTP_PORT: 8888
-      HTTPS_PORT: 9999
+    image: openresty/openresty
     restart: unless-stopped
+    volumes:
+      - ./nginx.conf:/usr/local/openresty/nginx/conf/nginx.conf:ro
     ports:
       - "8888:8888"
-      - "9999:9999"
     networks:
       apisix:
 
