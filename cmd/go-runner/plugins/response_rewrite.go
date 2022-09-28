@@ -21,10 +21,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"regexp"
+
 	pkgHTTP "github.com/apache/apisix-go-plugin-runner/pkg/http"
 	"github.com/apache/apisix-go-plugin-runner/pkg/log"
 	"github.com/apache/apisix-go-plugin-runner/pkg/plugin"
-	"regexp"
 )
 
 func init() {
@@ -118,7 +119,7 @@ func (p *ResponseRewrite) ResponseFilter(conf interface{}, w pkgHTTP.Response) {
 		return
 	}
 
-	if len(cfg.Body) == 0 {
+	if len(body) == 0 {
 		return
 	}
 write:
