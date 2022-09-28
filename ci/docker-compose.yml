@@ -52,7 +52,7 @@ services:
     image: openresty/openresty
     restart: unless-stopped
     volumes:
-      - ./nginx.conf:/usr/local/openresty/nginx/conf/nginx.conf:ro
+      - ci/openresty/nginx.conf:/usr/local/openresty/nginx/conf/nginx.conf:ro
     ports:
       - "8888:8888"
     networks:
