@@ -33,7 +33,7 @@ The following table describes the compatibility between apisix-go-plugin-runner 
 
 | apisix-go-plugin-runner |                         Apache APISIX |
 |------------------------:|--------------------------------------:|
-|                `master` | `>= 2.14.1`, `2.14.1` is recommended. |
+|                `master` |              `master` is recommended. |
 |                 `0.4.0` | `>= 2.14.1`, `2.14.1` is recommended. |
 |                 `0.3.0` | `>= 2.13.0`, `2.13.0` is recommended. |
 |                 `0.2.0` |   `>= 2.9.0`, `2.9.0` is recommended. |
@@ -148,10 +148,19 @@ at the same time by set RespHeader in `pkgHTTP.Request`.
 `ResponseFilter` supports rewriting the response during the response phase, we can see an example of its use in the ResponseRewrite plugin:
 
 ```go
+type RegexFilter struct {
+    Regex   string `json:"regex"`
+    Scope   string `json:"scope"`
+    Replace string `json:"replace"`
+    
+    regexComplied *regexp.Regexp
+}
+
 type ResponseRewriteConf struct {
     Status  int               `json:"status"`
     Headers map[string]string `json:"headers"`
     Body    string            `json:"body"`
+    Filters []RegexFilter     `json:"filters"`
 }
 
 func (p *ResponseRewrite) ResponseFilter(conf interface{}, w pkgHTTP.Response) {
@@ -167,6 +176,28 @@ func (p *ResponseRewrite) ResponseFilter(conf interface{}, w pkgHTTP.Response) {
 		}
 	}
 
+    body := []byte(cfg.Body)
+    if len(cfg.Filters) > 0 {
+        originBody, err := w.ReadBody()
+
+		......
+
+        for i := 0; i < len(cfg.Filters); i++ {
+            f := cfg.Filters[i]
+            found := f.regexComplied.Find(originBody)
+            if found != nil {
+                matched = true
+                if f.Scope == "once" {
+                    originBody = bytes.Replace(originBody, found, []byte(f.Replace), 1)
+				} else if f.Scope == "global" {
+                    originBody = bytes.ReplaceAll(originBody, found, []byte(f.Replace))
+                }
+            }
+        }
+
+        .......
+
+    }
 	if len(cfg.Body) == 0 {
 		return
 	}
