@@ -28,7 +28,7 @@ Runs [Apache APISIX](http://apisix.apache.org/) plugins written in Go. Implement
 
 ## Status
 
-This project is currently considered experimental.
+This project is generally available.
 
 ## Why apisix-go-plugin-runner
 
