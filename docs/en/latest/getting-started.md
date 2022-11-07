@@ -34,6 +34,7 @@ The following table describes the compatibility between apisix-go-plugin-runner 
 | apisix-go-plugin-runner |                         Apache APISIX |
 |------------------------:|--------------------------------------:|
 |                `master` |              `master` is recommended. |
+|                 `0.5.0` | `>= 2.14.1`,  `3.0.0` is recommended. |
 |                 `0.4.0` | `>= 2.14.1`, `2.14.1` is recommended. |
 |                 `0.3.0` | `>= 2.13.0`, `2.13.0` is recommended. |
 |                 `0.2.0` |   `>= 2.9.0`, `2.9.0` is recommended. |

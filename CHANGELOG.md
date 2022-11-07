@@ -23,10 +23,20 @@ title: Changelog
 
 ## Table of Contents
 
+- [0.5.0](#050)
 - [0.4.0](#040)
 - [0.3.0](#030)
 - [0.2.0](#020)
 - [0.1.0](#010)
+
+## 0.5.0
+
+### Feature
+- :sunrise: feat: response_rewrite plugin support replace body via origin res body [#109](https://github.com/apache/apisix-go-plugin-runner/pull/109)
+- :sunrise: feat: support get response body by extra_info [107](https://github.com/apache/apisix-go-plugin-runner/pull/107)
+
+### Bugfix
+- fix: set the correct rpc response type when meet an error [#102](https://github.com/apache/apisix-go-plugin-runner/pull/102)
 
 ## 0.4.0
 
