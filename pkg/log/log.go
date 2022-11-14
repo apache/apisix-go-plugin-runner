@@ -43,7 +43,7 @@ func NewLogger(level zapcore.Level, out zapcore.WriteSyncer) {
 	logger = lg.Sugar()
 }
 
-func getLogger() *zap.SugaredLogger {
+func GetLogger() *zap.SugaredLogger {
 	loggerInit.Do(func() {
 		if logger == nil {
 			// logger is not initialized, for example, running `go test`
@@ -54,21 +54,21 @@ func getLogger() *zap.SugaredLogger {
 }
 
 func Debugf(template string, args ...interface{}) {
-	getLogger().Debugf(template, args...)
+	GetLogger().Debugf(template, args...)
 }
 
 func Infof(template string, args ...interface{}) {
-	getLogger().Infof(template, args...)
+	GetLogger().Infof(template, args...)
 }
 
 func Warnf(template string, args ...interface{}) {
-	getLogger().Warnf(template, args...)
+	GetLogger().Warnf(template, args...)
 }
 
 func Errorf(template string, args ...interface{}) {
-	getLogger().Errorf(template, args...)
+	GetLogger().Errorf(template, args...)
 }
 
 func Fatalf(template string, args ...interface{}) {
-	getLogger().Fatalf(template, args...)
+	GetLogger().Fatalf(template, args...)
 }
