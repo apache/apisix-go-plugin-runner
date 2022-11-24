@@ -31,6 +31,10 @@ var (
 	loggerInit sync.Once
 )
 
+func SetLogger(l *zap.SugaredLogger) {
+	logger = l
+}
+
 func NewLogger(level zapcore.Level, out zapcore.WriteSyncer) {
 	var atomicLevel = zap.NewAtomicLevel()
 	atomicLevel.SetLevel(level)
