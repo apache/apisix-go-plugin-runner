@@ -32,7 +32,7 @@ var _ = ginkgo.Describe("ResponseRewrite Plugin", func() {
 			tools.RunTestCase(tc)
 		},
 		table.Entry("Config APISIX.", tools.HttpTestCase{
-			Object: tools.GetA6Expect(),
+			Object: tools.GetA6CPExpect(),
 			Method: http.MethodPut,
 			Path:   "/apisix/admin/routes/1",
 			Body: `{
@@ -58,10 +58,66 @@ var _ = ginkgo.Describe("ResponseRewrite Plugin", func() {
 			ExpectStatusRange: httpexpect.Status2xx,
 		}),
 		table.Entry("Should rewrite response.", tools.HttpTestCase{
-			Object:       tools.GetA6Expect(),
+			Object:       tools.GetA6DPExpect(),
 			Method:       http.MethodGet,
 			Path:         "/test/go/runner/say",
 			ExpectBody:   []string{"response rewrite"},
+			ExpectStatus: http.StatusOK,
+			ExpectHeaders: map[string]string{
+				"X-Resp-A6-Runner": "Go",
+				"X-Server-Id":      "9527",
+			},
+		}),
+		/*
+			{
+			    ....
+			    "filters": [
+			        {
+			            "regex": "world",
+			            "scope": "global",
+			            "replace": "golang"
+			        },
+			        {
+			            "regex": "hello",
+			            "scope": "once",
+			            "replace": "nice"
+			        }
+			    ]
+			    "body":"response rewrite"
+			}
+		*/
+		table.Entry("Config APISIX.", tools.HttpTestCase{
+			Object: tools.GetA6CPExpect(),
+			Method: http.MethodPut,
+			Path:   "/apisix/admin/routes/1",
+			Body: `{
+				"uri":"/echo",
+				"plugins":{
+					"ext-plugin-post-resp":{
+						"conf":[
+							{
+								"name":"response-rewrite",
+								"value":"{\"headers\":{\"X-Server-Id\":\"9527\"},\"filters\":[{\"regex\":\"world\",\"scope\":\"global\",\"replace\":\"golang\"},{\"regex\":\"hello\",\"scope\":\"once\",\"replace\":\"nice\"}],\"body\":\"response rewrite\"}"
+							}
+						]
+					}
+				},
+				"upstream":{
+					"nodes":{
+						"web:8888":1
+					},
+					"type":"roundrobin"
+				}
+			}`,
+			Headers:           map[string]string{"X-API-KEY": tools.GetAdminToken()},
+			ExpectStatusRange: httpexpect.Status2xx,
+		}),
+		table.Entry("Should replace response.", tools.HttpTestCase{
+			Object:       tools.GetA6DPExpect(),
+			Method:       http.MethodGet,
+			Path:         "/echo",
+			Body:         "hello hello world world",
+			ExpectBody:   []string{"nice hello golang golang"},
 			ExpectStatus: http.StatusOK,
 			ExpectHeaders: map[string]string{
 				"X-Resp-A6-Runner": "Go",

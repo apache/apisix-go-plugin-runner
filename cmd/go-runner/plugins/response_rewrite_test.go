@@ -71,3 +71,35 @@ func TestResponseRewrite_ConfEmpty(t *testing.T) {
 	assert.Equal(t, "Go", w.Header().Get("X-Resp-A6-Runner"))
 	assert.Equal(t, "", conf.(ResponseRewriteConf).Body)
 }
+
+func TestResponseRewrite_ReplaceGlobal(t *testing.T) {
+	in := []byte(`{"filters":[{"regex":"world","scope":"global","replace":"golang"}]}`)
+	rr := &ResponseRewrite{}
+	conf, err := rr.ParseConf(in)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(conf.(ResponseRewriteConf).Filters))
+
+	w := pkgHTTPTest.NewRecorder()
+	w.Code = 200
+	w.OriginBody = []byte("hello world world")
+	rr.ResponseFilter(conf, w)
+	assert.Equal(t, 200, w.StatusCode())
+	body, _ := ioutil.ReadAll(w.Body)
+	assert.Equal(t, "hello golang golang", string(body))
+}
+
+func TestResponseRewrite_ReplaceOnce(t *testing.T) {
+	in := []byte(`{"filters":[{"regex":"world","scope":"once","replace":"golang"}]}`)
+	rr := &ResponseRewrite{}
+	conf, err := rr.ParseConf(in)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(conf.(ResponseRewriteConf).Filters))
+
+	w := pkgHTTPTest.NewRecorder()
+	w.Code = 200
+	w.OriginBody = []byte("hello world world")
+	rr.ResponseFilter(conf, w)
+	assert.Equal(t, 200, w.StatusCode())
+	body, _ := ioutil.ReadAll(w.Body)
+	assert.Equal(t, "hello golang world", string(body))
+}

@@ -33,7 +33,8 @@ The following table describes the compatibility between apisix-go-plugin-runner 
 
 | apisix-go-plugin-runner |                         Apache APISIX |
 |------------------------:|--------------------------------------:|
-|                `master` | `>= 2.14.1`, `2.14.1` is recommended. |
+|                `master` |              `master` is recommended. |
+|                 `0.5.0` |   `>= 3.0.0`, `3.0.0` is recommended. |
 |                 `0.4.0` | `>= 2.14.1`, `2.14.1` is recommended. |
 |                 `0.3.0` | `>= 2.13.0`, `2.13.0` is recommended. |
 |                 `0.2.0` |   `>= 2.9.0`, `2.9.0` is recommended. |
@@ -148,10 +149,19 @@ at the same time by set RespHeader in `pkgHTTP.Request`.
 `ResponseFilter` supports rewriting the response during the response phase, we can see an example of its use in the ResponseRewrite plugin:
 
 ```go
+type RegexFilter struct {
+    Regex   string `json:"regex"`
+    Scope   string `json:"scope"`
+    Replace string `json:"replace"`
+    
+    regexComplied *regexp.Regexp
+}
+
 type ResponseRewriteConf struct {
     Status  int               `json:"status"`
     Headers map[string]string `json:"headers"`
     Body    string            `json:"body"`
+    Filters []RegexFilter     `json:"filters"`
 }
 
 func (p *ResponseRewrite) ResponseFilter(conf interface{}, w pkgHTTP.Response) {
@@ -167,6 +177,28 @@ func (p *ResponseRewrite) ResponseFilter(conf interface{}, w pkgHTTP.Response) {
 		}
 	}
 
+    body := []byte(cfg.Body)
+    if len(cfg.Filters) > 0 {
+        originBody, err := w.ReadBody()
+
+		......
+
+        for i := 0; i < len(cfg.Filters); i++ {
+            f := cfg.Filters[i]
+            found := f.regexComplied.Find(originBody)
+            if found != nil {
+                matched = true
+                if f.Scope == "once" {
+                    originBody = bytes.Replace(originBody, found, []byte(f.Replace), 1)
+				} else if f.Scope == "global" {
+                    originBody = bytes.ReplaceAll(originBody, found, []byte(f.Replace))
+                }
+            }
+        }
+
+        .......
+
+    }
 	if len(cfg.Body) == 0 {
 		return
 	}
@@ -259,6 +291,8 @@ We can see that the interface returns hello and does not access anything upstrea
 
 ### Setting up APISIX (running)
 
+#### Setting up directly
+
 Here's an example of go-runner, you just need to configure the command line to run it inside ext-plugin:
 
 ```
@@ -270,3 +304,27 @@ ext-plugin:
 APISIX will treat the plugin runner as a child process of its own, managing its entire lifecycle.
 
 APISIX will automatically assign a unix socket address for the runner to listen to when it starts. environment variables do not need to be set manually.
+
+#### Setting up in container
+
+First you need to prepare the go-runner binary. Use this command:
+
+```shell
+make build
+```
+
+:::note
+When you use a Linux distribution such as Alpine Linux that is not based on standard glibc, you must turn off Golang's CGO support via the `CGO_ENABLED=0` environment variable to avoid libc ABI incompatibilities. 
+
+If you want to use CGO, then you must build the binaries using the Go compiler and the C compiler in the same Linux distribution.
+:::
+
+Then you need to rebuild the container image to include the go-runner binary. You can use the following Dockerfile:
+
+```
+FROM apache/apisix:2.15.0-debian
+
+COPY ./go-runner /usr/local/apisix-go-plugin-runner/go-runner
+```
+
+Finally, you can push and run your custom image, just configure the binary path and commands in the configuration file via `ext-plugin.cmd` to start APISIX with go plugin runner.

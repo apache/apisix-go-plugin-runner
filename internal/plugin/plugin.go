@@ -210,6 +210,7 @@ func (ph *responsePhase) builder(id uint32, resp *inHTTP.Response) *flatbuffers.
 
 func HTTPRespCall(buf []byte, conn net.Conn) (*flatbuffers.Builder, error) {
 	resp := inHTTP.CreateResponse(buf)
+	resp.BindConn(conn)
 	defer inHTTP.ReuseResponse(resp)
 
 	token := resp.ConfToken()

@@ -27,6 +27,7 @@ services:
     depends_on:
       - etcd
     ports:
+      - "9180:9180/tcp"
       - "9080:9080/tcp"
       - "9091:9091/tcp"
       - "9443:9443/tcp"
@@ -48,14 +49,12 @@ services:
       apisix:
 
   web:
-    image: mendhak/http-https-echo
-    environment:
-      HTTP_PORT: 8888
-      HTTPS_PORT: 9999
+    image: openresty/openresty
     restart: unless-stopped
+    volumes:
+      - ./openresty/nginx.conf:/usr/local/openresty/nginx/conf/nginx.conf:ro
     ports:
       - "8888:8888"
-      - "9999:9999"
     networks:
       apisix:
 

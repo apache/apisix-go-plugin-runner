@@ -95,6 +95,23 @@ type Response interface {
 	// It allows you to add or set response headers before reaching the client.
 	Header() Header
 
+	// Var returns the value of a Nginx variable, like `r.Var("request_time")`
+	//
+	// To fetch the value, the runner will look up the request's cache first. If not found,
+	// the runner will ask it from the APISIX. If the RPC call is failed, an error in
+	// pkg/common.ErrConnClosed type is returned.
+	Var(name string) ([]byte, error)
+
+	// ReadBody returns origin HTTP response body
+	//
+	// To fetch the value, the runner will look up the request's cache first. If not found,
+	// the runner will ask it from the APISIX. If the RPC call is failed, an error in
+	// pkg/common.ErrConnClosed type is returned.
+	//
+	// It was not named `Body`
+	// because `Body` was already occupied in earlier interface implementations.
+	ReadBody() ([]byte, error)
+
 	// Write rewrites the origin response data.
 	//
 	// Unlike `ResponseWriter.Write`, we don't need to WriteHeader(http.StatusOK)

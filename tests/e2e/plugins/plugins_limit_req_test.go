@@ -32,7 +32,7 @@ var _ = ginkgo.Describe("Limit-req Plugin", func() {
 			tools.RunTestCase(tc)
 		},
 		table.Entry("Config APISIX.", tools.HttpTestCase{
-			Object: tools.GetA6Expect(),
+			Object: tools.GetA6CPExpect(),
 			Method: http.MethodPut,
 			Path:   "/apisix/admin/routes/1",
 			Body: `{
@@ -58,7 +58,7 @@ var _ = ginkgo.Describe("Limit-req Plugin", func() {
 			ExpectStatusRange: httpexpect.Status2xx,
 		}),
 		table.Entry("Test if limit-req plugin work.", tools.HttpTestCase{
-			Object:       tools.GetA6Expect(),
+			Object:       tools.GetA6DPExpect(),
 			Method:       http.MethodGet,
 			Path:         "/test/go/runner/limitreq",
 			ExpectStatus: http.StatusOK,

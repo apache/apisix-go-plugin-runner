@@ -73,33 +73,40 @@ func recoverPanic() {
 	}
 }
 
-func dispatchRPC(ty byte, in []byte, conn net.Conn) *flatbuffers.Builder {
+func dispatchRPC(ty byte, in []byte, conn net.Conn) (*flatbuffers.Builder, byte) {
 	var err error
 	var bd *flatbuffers.Builder
 	hl, ok := typeHandlerMap[ty]
 	if !ok {
-		err = UnknownType{ty}
-	} else {
-		bd, err = hl(in, conn)
+		log.Warnf("unknown rpc type: %d", ty)
+		return generateErrorReport(UnknownType{ty}), util.RPCError
 	}
 
+	bd, err = hl(in, conn)
 	if err != nil {
-		bd = generateErrorReport(err)
-	} else {
-		bd = checkIfDataTooLarge(bd)
+		return generateErrorReport(err), util.RPCError
 	}
-	return bd
+
+	replaced, ok := checkIfDataTooLarge(bd)
+	if !ok {
+		return replaced, util.RPCError
+	}
+
+	return bd, ty
 }
 
-func checkIfDataTooLarge(bd *flatbuffers.Builder) *flatbuffers.Builder {
+func checkIfDataTooLarge(bd *flatbuffers.Builder) (*flatbuffers.Builder, bool) {
 	out := bd.FinishedBytes()
 	size := len(out)
-	if size > util.MaxDataSize {
-		err := fmt.Errorf("the max length of data is %d but got %d", util.MaxDataSize, size)
-		util.PutBuilder(bd)
-		bd = generateErrorReport(err)
+	if size < util.MaxDataSize {
+		return bd, true
 	}
-	return bd
+
+	err := fmt.Errorf("the max length of data is %d but got %d", util.MaxDataSize, size)
+	util.PutBuilder(bd)
+	bd = generateErrorReport(err)
+
+	return bd, false
 }
 
 func handleConn(c net.Conn) {
@@ -129,11 +136,11 @@ func handleConn(c net.Conn) {
 			break
 		}
 
-		bd := dispatchRPC(ty, buf, c)
+		bd, respTy := dispatchRPC(ty, buf, c)
 		out := bd.FinishedBytes()
 		size := len(out)
 		binary.BigEndian.PutUint32(header, uint32(size))
-		header[0] = ty
+		header[0] = respTy
 
 		n, err = c.Write(header)
 		if err != nil {
