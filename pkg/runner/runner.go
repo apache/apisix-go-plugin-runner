@@ -20,6 +20,7 @@ package runner
 import (
 	"os"
 
+	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
 	"github.com/apache/apisix-go-plugin-runner/internal/server"
@@ -32,6 +33,8 @@ type RunnerConfig struct {
 	LogLevel zapcore.Level
 	// LogOutput is the output of log, default to `os.Stdout`
 	LogOutput zapcore.WriteSyncer
+	// Logger will be reused by the framework when it is not nil.
+	Logger *zap.SugaredLogger
 }
 
 // Run starts the runner and listen the socket configured by environment variable "APISIX_LISTEN_ADDRESS"
@@ -39,6 +42,12 @@ func Run(cfg RunnerConfig) {
 	if cfg.LogOutput == nil {
 		cfg.LogOutput = os.Stdout
 	}
-	log.NewLogger(cfg.LogLevel, cfg.LogOutput)
+
+	if cfg.Logger == nil {
+		log.NewLogger(cfg.LogLevel, cfg.LogOutput)
+	} else {
+		log.SetLogger(cfg.Logger)
+	}
+
 	server.Run()
 }
