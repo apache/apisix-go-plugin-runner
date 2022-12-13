@@ -26,7 +26,7 @@ import (
 
 // Plugin represents the Plugin
 type Plugin interface {
-	// Name returns the plguin name
+	// Name returns the plugin name
 	Name() string
 
 	// ParseConf is the method to parse given plugin configuration. When the
