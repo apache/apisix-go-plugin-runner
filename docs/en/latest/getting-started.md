@@ -129,7 +129,7 @@ type SayConf struct {
 
 ```
 func (p *Say) RequestFilter(conf interface{}, w http.ResponseWriter, r pkgHTTP.Request) {
-	body := conf.(SayConf).
+	body := conf.(SayConf).Body
 	if len(body) == 0 {
 		return
 	}
