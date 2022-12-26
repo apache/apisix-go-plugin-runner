@@ -117,7 +117,7 @@ func handleConn(c net.Conn) {
 
 	header := make([]byte, util.HeaderLen)
 	for {
-		n, err := c.Read(header)
+		n, err := util.ReadBytes(c, header, util.HeaderLen)
 		if util.ReadErr(n, err, util.HeaderLen) {
 			break
 		}
@@ -131,7 +131,7 @@ func handleConn(c net.Conn) {
 		log.Infof("receive rpc type: %d data length: %d", ty, length)
 
 		buf := make([]byte, length)
-		n, err = c.Read(buf)
+		n, err = util.ReadBytes(c, buf, int(length))
 		if util.ReadErr(n, err, int(length)) {
 			break
 		}
@@ -142,13 +142,13 @@ func handleConn(c net.Conn) {
 		binary.BigEndian.PutUint32(header, uint32(size))
 		header[0] = respTy
 
-		n, err = c.Write(header)
+		n, err = util.WriteBytes(c, header, len(header))
 		if err != nil {
 			util.WriteErr(n, err)
 			break
 		}
 
-		n, err = c.Write(out)
+		n, err = util.WriteBytes(c, out, size)
 		if err != nil {
 			util.WriteErr(n, err)
 			break

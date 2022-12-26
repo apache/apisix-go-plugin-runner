@@ -121,7 +121,7 @@ func TestRun(t *testing.T) {
 		conn, err := net.DialTimeout("unix", addr[len("unix:"):], 1*time.Second)
 		assert.NotNil(t, conn, err)
 		defer conn.Close()
-		conn.Write(c.header)
+		util.WriteBytes(conn, c.header, len(c.header))
 	}
 
 	syscall.Kill(syscall.Getpid(), syscall.SIGINT)
