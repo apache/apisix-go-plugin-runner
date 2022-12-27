@@ -305,7 +305,7 @@ func TestVar(t *testing.T) {
 
 	go func() {
 		header := make([]byte, util.HeaderLen)
-		n, err := sc.Read(header)
+		n, err := util.ReadBytes(sc, header, util.HeaderLen)
 		if util.ReadErr(n, err, util.HeaderLen) {
 			return
 		}
@@ -316,7 +316,7 @@ func TestVar(t *testing.T) {
 		length := binary.BigEndian.Uint32(header)
 
 		buf := make([]byte, length)
-		n, err = sc.Read(buf)
+		n, err = util.ReadBytes(sc, buf, int(length))
 		if util.ReadErr(n, err, int(length)) {
 			return
 		}
@@ -336,13 +336,13 @@ func TestVar(t *testing.T) {
 		binary.BigEndian.PutUint32(header, uint32(size))
 		header[0] = util.RPCExtraInfo
 
-		n, err = sc.Write(header)
+		n, err = util.WriteBytes(sc, header, len(header))
 		if err != nil {
 			util.WriteErr(n, err)
 			return
 		}
 
-		n, err = sc.Write(out)
+		n, err = util.WriteBytes(sc, out, size)
 		if err != nil {
 			util.WriteErr(n, err)
 			return
@@ -365,7 +365,7 @@ func TestVar_FailedToSendExtraInfoReq(t *testing.T) {
 
 	go func() {
 		header := make([]byte, util.HeaderLen)
-		n, err := sc.Read(header)
+		n, err := util.ReadBytes(sc, header, util.HeaderLen)
 		if util.ReadErr(n, err, util.HeaderLen) {
 			return
 		}
@@ -385,7 +385,7 @@ func TestVar_FailedToReadExtraInfoResp(t *testing.T) {
 
 	go func() {
 		header := make([]byte, util.HeaderLen)
-		n, err := sc.Read(header)
+		n, err := util.ReadBytes(sc, header, util.HeaderLen)
 		if util.ReadErr(n, err, util.HeaderLen) {
 			return
 		}
@@ -396,7 +396,7 @@ func TestVar_FailedToReadExtraInfoResp(t *testing.T) {
 		length := binary.BigEndian.Uint32(header)
 
 		buf := make([]byte, length)
-		n, err = sc.Read(buf)
+		n, err = util.ReadBytes(sc, buf, int(length))
 		if util.ReadErr(n, err, int(length)) {
 			return
 		}
@@ -458,7 +458,7 @@ func TestBody(t *testing.T) {
 
 	go func() {
 		header := make([]byte, util.HeaderLen)
-		n, err := sc.Read(header)
+		n, err := util.ReadBytes(sc, header, util.HeaderLen)
 		if util.ReadErr(n, err, util.HeaderLen) {
 			return
 		}
@@ -469,7 +469,7 @@ func TestBody(t *testing.T) {
 		length := binary.BigEndian.Uint32(header)
 
 		buf := make([]byte, length)
-		n, err = sc.Read(buf)
+		n, err = util.ReadBytes(sc, buf, int(length))
 		if util.ReadErr(n, err, int(length)) {
 			return
 		}
@@ -488,13 +488,13 @@ func TestBody(t *testing.T) {
 		binary.BigEndian.PutUint32(header, uint32(size))
 		header[0] = util.RPCExtraInfo
 
-		n, err = sc.Write(header)
+		n, err = util.WriteBytes(sc, header, len(header))
 		if err != nil {
 			util.WriteErr(n, err)
 			return
 		}
 
-		n, err = sc.Write(out)
+		n, err = util.WriteBytes(sc, out, size)
 		if err != nil {
 			util.WriteErr(n, err)
 			return

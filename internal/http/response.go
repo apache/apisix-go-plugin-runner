@@ -73,19 +73,19 @@ func (r *Response) askExtraInfo(builder *flatbuffers.Builder,
 	binary.BigEndian.PutUint32(header, uint32(size))
 	header[0] = util.RPCExtraInfo
 
-	n, err := c.Write(header)
+	n, err := util.WriteBytes(c, header, len(header))
 	if err != nil {
 		util.WriteErr(n, err)
 		return nil, common.ErrConnClosed
 	}
 
-	n, err = c.Write(out)
+	n, err = util.WriteBytes(c, out, size)
 	if err != nil {
 		util.WriteErr(n, err)
 		return nil, common.ErrConnClosed
 	}
 
-	n, err = c.Read(header)
+	n, err = util.ReadBytes(c, header, util.HeaderLen)
 	if util.ReadErr(n, err, util.HeaderLen) {
 		return nil, common.ErrConnClosed
 	}
@@ -97,7 +97,7 @@ func (r *Response) askExtraInfo(builder *flatbuffers.Builder,
 	log.Infof("receive rpc type: %d data length: %d", ty, length)
 
 	buf := make([]byte, length)
-	n, err = c.Read(buf)
+	n, err = util.ReadBytes(c, buf, int(length))
 	if util.ReadErr(n, err, int(length)) {
 		return nil, common.ErrConnClosed
 	}

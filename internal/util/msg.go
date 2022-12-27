@@ -20,6 +20,7 @@ package util
 import (
 	"fmt"
 	"io"
+	"net"
 
 	flatbuffers "github.com/google/flatbuffers/go"
 
@@ -64,4 +65,28 @@ func WriteErr(n int, err error) {
 	if err != nil {
 		log.Errorf("write: %s", err)
 	}
+}
+
+func ReadBytes(c net.Conn, b []byte, n int) (int, error) {
+	l := 0
+	for l < n {
+		tmp, err := c.Read(b[l:])
+		if err != nil {
+			return l + tmp, err
+		}
+		l += tmp
+	}
+	return l, nil
+}
+
+func WriteBytes(c net.Conn, b []byte, n int) (int, error) {
+	l := 0
+	for l < n {
+		tmp, err := c.Write(b[l:])
+		if err != nil {
+			return l + tmp, err
+		}
+		l += tmp
+	}
+	return l, nil
 }
