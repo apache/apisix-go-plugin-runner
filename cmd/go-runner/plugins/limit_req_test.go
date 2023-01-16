@@ -54,7 +54,7 @@ func TestLimitReq(t *testing.T) {
 	}
 	assert.Equal(t, 0, rejectN)
 	t.Logf("Start: %v, now: %v", start, time.Now())
-	assert.True(t, time.Now().Sub(start) >= 1*time.Second)
+	assert.True(t, time.Since(start) >= 1*time.Second)
 }
 
 func TestLimitReq_YouShouldNotPass(t *testing.T) {
