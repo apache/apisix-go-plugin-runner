@@ -31,7 +31,7 @@ type DataNodeAccessControlResponse struct {
 }
 
 type AccessVerifier interface {
-	Verify(conf *DataNodeAccessControlConf, path string) (bool, error)
+	Verify(conf *DataNodeAccessControlConf, path, apiKey string) (bool, error)
 }
 
 func init() {
@@ -61,9 +61,9 @@ func (p *DataNodeAccessControl) ParseConf(in []byte) (interface{}, error) {
 
 func (p *DataNodeAccessControl) RequestFilter(conf interface{}, w http.ResponseWriter, r pkgHTTP.Request) {
 	parsedConf := conf.(DataNodeAccessControlConf)
-	log.Debugf("conf: %v", parsedConf)
 
-	isAllowed, err := p.v.Verify(&parsedConf, string(r.Path()))
+	apiKey := getAPIKey(r)
+	isAllowed, err := p.v.Verify(&parsedConf, string(r.Path()), apiKey)
 	if err != nil {
 		writeHeader(w, http.StatusServiceUnavailable, "service unavailable", err)
 		return
@@ -92,9 +92,19 @@ func writeHeader(w http.ResponseWriter, status int, msg string, err error) {
 	w.WriteHeader(status)
 }
 
+// getAPIKey either gets from query param apikey=xxx or get from header apikey
+func getAPIKey(r pkgHTTP.Request) string {
+	apiKey := r.Args().Get("apikey")
+	if apiKey == "" {
+		apiKey = r.Header().Get("apikey")
+	}
+
+	return apiKey
+}
+
 type APIVerify struct{}
 
-func (v *APIVerify) Verify(conf *DataNodeAccessControlConf, path string) (bool, error) {
+func (v *APIVerify) Verify(conf *DataNodeAccessControlConf, path, apiKey string) (bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -107,6 +117,7 @@ func (v *APIVerify) Verify(conf *DataNodeAccessControlConf, path string) (bool, 
 	)
 
 	req.Header.Set("Authorization", "Bearer "+conf.ServiceAccountToken)
+	req.Header.Set("x-api-key", apiKey)
 	if err != nil {
 		return false, err
 	}
