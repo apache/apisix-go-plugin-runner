@@ -17,7 +17,6 @@ type MockAccessVerifier struct {
 func (m *MockAccessVerifier) Verify(conf *plugins.DataNodeAccessControlConf, path, apiKey string) (bool, error) {
 	t := m.T
 
-	assert.Equal(t, conf.ConsumerName, "test")
 	assert.Equal(t, conf.VerifyURL, "http://test.xyz")
 	assert.Equal(t, conf.ServiceAccountToken, "test-token")
 	assert.Equal(t, apiKey, "test-key")
@@ -27,7 +26,7 @@ func (m *MockAccessVerifier) Verify(conf *plugins.DataNodeAccessControlConf, pat
 
 // TODO: add test case for checking api key in header
 func TestDataNodeAccessControl(t *testing.T) {
-	in := []byte(`{"consumer-name":"test","verify-url":"http://test.xyz","service-account-token":"test-token"}`)
+	in := []byte(`{"verify-url":"http://test.xyz","service-account-token":"test-token"}`)
 	dnac := plugins.NewDataNodeAccessControl(&MockAccessVerifier{t})
 	conf, err := dnac.ParseConf(in)
 	if err != nil {

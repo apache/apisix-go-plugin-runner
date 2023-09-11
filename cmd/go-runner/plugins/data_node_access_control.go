@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
-	"strings"
 	"time"
 
 	pkgHTTP "github.com/apache/apisix-go-plugin-runner/pkg/http"
@@ -18,9 +17,6 @@ type DataNodeAccessControl struct {
 }
 
 type DataNodeAccessControlConf struct {
-	// Consumer level config
-	ConsumerName string `json:"consumer-name"`
-
 	// Route level config
 	VerifyURL           string `json:"verify-url"`
 	ServiceAccountToken string `json:"service-account-token"`
@@ -108,7 +104,7 @@ func (v *APIVerify) Verify(conf *DataNodeAccessControlConf, path, apiKey string)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	url := strings.Replace(conf.VerifyURL, "${id}", conf.ConsumerName, 1)
+	url := conf.VerifyURL
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodGet,
