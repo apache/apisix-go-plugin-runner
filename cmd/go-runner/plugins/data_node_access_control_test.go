@@ -20,6 +20,7 @@ func (m *MockAccessVerifier) Verify(conf *plugins.DataNodeAccessControlConf, pat
 	assert.Equal(t, conf.VerifyURL, "http://test.xyz")
 	assert.Equal(t, conf.ServiceAccountToken, "test-token")
 	assert.Equal(t, apiKey, "test-key")
+	assert.Equal(t, path, "https://bazinga.xyz")
 
 	return true, nil
 }
@@ -34,7 +35,6 @@ func TestDataNodeAccessControl(t *testing.T) {
 	}
 
 	req := &MockHTTPRequest{}
-	req.SetPath([]byte("http://test.xyz"))
 	req.Args().Set("apikey", "test-key")
 	dnac.RequestFilter(conf, httptest.NewRecorder(), req)
 }
@@ -47,4 +47,12 @@ func (m *MockHTTPRequest) Args() url.Values {
 	args := url.Values{}
 	args.Set("apikey", "test-key")
 	return args
+}
+
+func (m *MockHTTPRequest) Var(key string) ([]byte, error) {
+	mock := map[string][]byte{
+		"scheme": []byte("https"),
+		"host":   []byte("bazinga.xyz"),
+	}
+	return mock[key], nil
 }

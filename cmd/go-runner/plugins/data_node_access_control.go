@@ -3,6 +3,7 @@ package plugins
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"time"
@@ -58,8 +59,12 @@ func (p *DataNodeAccessControl) ParseConf(in []byte) (interface{}, error) {
 func (p *DataNodeAccessControl) RequestFilter(conf interface{}, w http.ResponseWriter, r pkgHTTP.Request) {
 	parsedConf := conf.(DataNodeAccessControlConf)
 
+	scheme, _ := r.Var("scheme")
+	host, _ := r.Var("host")
+	path := fmt.Sprintf("%s://%s", scheme, host)
+
 	apiKey := getAPIKey(r)
-	isAllowed, err := p.v.Verify(&parsedConf, string(r.Path()), apiKey)
+	isAllowed, err := p.v.Verify(&parsedConf, path, apiKey)
 	if err != nil {
 		writeHeader(w, http.StatusServiceUnavailable, "service unavailable", err)
 		return
