@@ -189,6 +189,10 @@ func (r *Request) Body() ([]byte, error) {
 	return v, nil
 }
 
+func (r *Request) SetBody(body []byte) {
+	r.body = body
+}
+
 func (r *Request) Reset() {
 	defer r.cancel()
 	r.path = nil
@@ -205,13 +209,18 @@ func (r *Request) Reset() {
 }
 
 func (r *Request) FetchChanges(id uint32, builder *flatbuffers.Builder) bool {
-	if r.path == nil && r.hdr == nil && r.args == nil && r.respHdr == nil {
+	if !r.hasChanges() {
 		return false
 	}
 
 	var path flatbuffers.UOffsetT
 	if r.path != nil {
 		path = builder.CreateByteString(r.path)
+	}
+
+	var body flatbuffers.UOffsetT
+	if r.body != nil {
+		body = builder.CreateByteVector(r.body)
 	}
 
 	var hdrVec, respHdrVec flatbuffers.UOffsetT
@@ -314,6 +323,9 @@ func (r *Request) FetchChanges(id uint32, builder *flatbuffers.Builder) bool {
 	if path > 0 {
 		hrc.RewriteAddPath(builder, path)
 	}
+	if body > 0 {
+		hrc.RewriteAddBody(builder, body)
+	}
 	if hdrVec > 0 {
 		hrc.RewriteAddHeaders(builder, hdrVec)
 	}
@@ -344,6 +356,11 @@ func (r *Request) Context() context.Context {
 		return r.ctx
 	}
 	return context.Background()
+}
+
+func (r *Request) hasChanges() bool {
+	return r.path != nil || r.hdr != nil ||
+		r.args != nil || r.respHdr != nil || r.body != nil
 }
 
 func (r *Request) askExtraInfo(builder *flatbuffers.Builder,

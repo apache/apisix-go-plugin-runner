@@ -502,6 +502,17 @@ func TestBody(t *testing.T) {
 	}()
 
 	v, err := r.Body()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, "Hello, Go Runner", string(v))
+
+	const newBody = "Hello, Rust Runner"
+	r.SetBody([]byte(newBody))
+	v, err = r.Body()
+	assert.NoError(t, err)
+	assert.Equal(t, []byte(newBody), v)
+
+	builder := util.GetBuilder()
+	assert.True(t, r.FetchChanges(1, builder))
+	rewrite := getRewriteAction(t, builder)
+	assert.Equal(t, []byte(newBody), rewrite.BodyBytes())
 }
