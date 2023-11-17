@@ -72,6 +72,7 @@ type reqOpt struct {
 	headers    []pair
 	respHeader []pair
 	args       []pair
+	body       string
 }
 
 func buildReq(opt reqOpt) []byte {
@@ -504,4 +505,15 @@ func TestBody(t *testing.T) {
 	v, err := r.Body()
 	assert.Nil(t, err)
 	assert.Equal(t, "Hello, Go Runner", string(v))
+}
+func TestSetBody(t *testing.T) {
+	out := buildReq(reqOpt{body: "apisix"})
+	r := CreateRequest(out)
+	r.SetBody([]byte("apisix"))
+	assert.Equal(t, "apisix", string(r.body))
+	r.SetBody([]byte("apisix_edit"))
+	builder := util.GetBuilder()
+	assert.True(t, r.FetchChanges(1, builder))
+	rewrite := getRewriteAction(t, builder)
+	assert.Equal(t, "apisix_edit", string(rewrite.BodyBytes()))
 }

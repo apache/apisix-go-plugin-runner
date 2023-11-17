@@ -89,6 +89,10 @@ func (r *Request) SetPath(path []byte) {
 	r.path = path
 }
 
+func (r *Request) SetBody(b []byte) {
+	r.body = b
+}
+
 func (r *Request) Header() pkgHTTP.Header {
 	if r.hdr == nil {
 		hdr := newHeader()
@@ -205,15 +209,17 @@ func (r *Request) Reset() {
 }
 
 func (r *Request) FetchChanges(id uint32, builder *flatbuffers.Builder) bool {
-	if r.path == nil && r.hdr == nil && r.args == nil && r.respHdr == nil {
+	if r.path == nil && r.hdr == nil && r.args == nil && r.respHdr == nil && r.body == nil {
 		return false
 	}
 
-	var path flatbuffers.UOffsetT
+	var path, body flatbuffers.UOffsetT
 	if r.path != nil {
 		path = builder.CreateByteString(r.path)
 	}
-
+	if r.body != nil {
+		body = builder.CreateByteString(r.body)
+	}
 	var hdrVec, respHdrVec flatbuffers.UOffsetT
 	if r.hdr != nil {
 		hdrs := []flatbuffers.UOffsetT{}
@@ -313,6 +319,9 @@ func (r *Request) FetchChanges(id uint32, builder *flatbuffers.Builder) bool {
 	hrc.RewriteStart(builder)
 	if path > 0 {
 		hrc.RewriteAddPath(builder, path)
+	}
+	if body > 0 {
+		hrc.RewriteAddBody(builder, body)
 	}
 	if hdrVec > 0 {
 		hrc.RewriteAddHeaders(builder, hdrVec)
