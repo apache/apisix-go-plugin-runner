@@ -21,6 +21,7 @@ import (
 	"net/http"
 
 	"github.com/apache/apisix-go-plugin-runner/tests/e2e/tools"
+	"github.com/gavv/httpexpect/v2"
 	"github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/extensions/table"
 )
@@ -53,12 +54,16 @@ var _ = ginkgo.Describe("RequestBodyRewrite Plugin", func() {
 					"type":"roundrobin"
 				}
 			}`,
+			Headers:           map[string]string{"X-API-KEY": tools.GetAdminToken()},
+			ExpectStatusRange: httpexpect.Status2xx,
 		}),
 		table.Entry("should rewrite request body", tools.HttpTestCase{
-			Object:     tools.GetA6DPExpect(),
-			Method:     http.MethodGet,
-			Path:       "/echo",
-			ExpectBody: "request body rewrite",
+			Object:       tools.GetA6DPExpect(),
+			Method:       http.MethodGet,
+			Path:         "/echo",
+			Body:         "hello hello world world",
+			ExpectBody:   "request body rewrite",
+			ExpectStatus: http.StatusOK,
 		}),
 	)
 })
