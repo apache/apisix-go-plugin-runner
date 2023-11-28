@@ -67,6 +67,9 @@ type Request interface {
 	// pkg/common.ErrConnClosed type is returned.
 	Body() ([]byte, error)
 
+	// SetBody rewrites the original request body
+	SetBody([]byte)
+
 	// Context returns the request's context.
 	//
 	// The returned context is always non-nil; it defaults to the

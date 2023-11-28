@@ -7,3 +7,6 @@ release/
 coverage.txt
 logs/
 *.svg
+.vscode
+go.work
+go.work.sum
