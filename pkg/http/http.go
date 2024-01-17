@@ -134,14 +134,18 @@ type Header interface {
 	// It replaces any existing values associated with key.
 	// The key is case insensitive
 	Set(key, value string)
+
 	// Del deletes the values associated with key. The key is case insensitive
 	Del(key string)
+
 	// Get gets the first value associated with the given key.
 	// If there are no values associated with the key, Get returns "".
 	// It is case insensitive
 	Get(key string) string
+
 	// View returns the internal structure. It is expected for read operations. Any write operation
 	// won't be recorded
+	//Deprecated: refactoring
 	View() http.Header
 
 	// TODO: support Add
