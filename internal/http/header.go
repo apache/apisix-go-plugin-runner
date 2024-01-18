@@ -34,7 +34,7 @@ type Header struct {
 	hdr    http.Header
 	rawHdr http.Header
 
-	deleteField []string
+	deleteField map[string]struct{}
 }
 
 func newHeader(r ReadHeader) *Header {
@@ -51,20 +51,25 @@ func newHeader(r ReadHeader) *Header {
 		hdr:    http.Header{},
 		rawHdr: hh,
 
-		deleteField: make([]string, 0),
+		deleteField: make(map[string]struct{}, 0),
 	}
 }
 
 func (h *Header) Set(key, value string) {
 	h.hdr.Set(key, value)
+
+	if _, ok := h.deleteField[key]; ok {
+		delete(h.deleteField, key)
+	}
 }
 
 func (h *Header) Del(key string) {
-	h.hdr.Del(key)
-
 	if h.rawHdr.Get(key) != "" {
-		h.deleteField = append(h.deleteField, key)
+		h.deleteField[key] = struct{}{}
+		h.rawHdr.Del(key)
 	}
+
+	h.hdr.Del(key)
 }
 
 func (h *Header) Get(key string) string {
@@ -76,7 +81,7 @@ func (h *Header) Get(key string) string {
 }
 
 // View
-//Deprecated: refactoring
+// Deprecated: refactoring
 func (h *Header) View() http.Header {
 	return h.hdr
 }
@@ -85,7 +90,7 @@ func (h *Header) Build(builder *flatbuffers.Builder) flatbuffers.UOffsetT {
 	var hdrs []flatbuffers.UOffsetT
 
 	// deleted
-	for _, d := range h.deleteField {
+	for d := range h.deleteField {
 		name := builder.CreateString(d)
 		A6.TextEntryStart(builder)
 		A6.TextEntryAddName(builder, name)
