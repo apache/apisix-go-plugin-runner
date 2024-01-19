@@ -51,16 +51,13 @@ func newHeader(r ReadHeader) *Header {
 		hdr:    http.Header{},
 		rawHdr: hh,
 
-		deleteField: make(map[string]struct{}, 0),
+		deleteField: make(map[string]struct{}),
 	}
 }
 
 func (h *Header) Set(key, value string) {
 	h.hdr.Set(key, value)
-
-	if _, ok := h.deleteField[key]; ok {
-		delete(h.deleteField, key)
-	}
+	delete(h.deleteField, key)
 }
 
 func (h *Header) Del(key string) {
