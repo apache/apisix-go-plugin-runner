@@ -21,7 +21,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"net"
-	"net/http"
 	"sync"
 
 	"github.com/apache/apisix-go-plugin-runner/internal/util"
@@ -30,7 +29,6 @@ import (
 
 	pkgHTTP "github.com/apache/apisix-go-plugin-runner/pkg/http"
 	"github.com/apache/apisix-go-plugin-runner/pkg/log"
-	"github.com/api7/ext-plugin-proto/go/A6"
 	hrc "github.com/api7/ext-plugin-proto/go/A6/HTTPRespCall"
 	flatbuffers "github.com/google/flatbuffers/go"
 )
@@ -41,8 +39,7 @@ type Response struct {
 	conn            net.Conn
 	extraInfoHeader []byte
 
-	hdr    *Header
-	rawHdr http.Header
+	hdr *Header
 
 	statusCode int
 
@@ -120,18 +117,9 @@ func (r *Response) StatusCode() int {
 
 func (r *Response) Header() pkgHTTP.Header {
 	if r.hdr == nil {
-		hdr := newHeader()
-		hh := hdr.View()
-		size := r.r.HeadersLength()
-		obj := A6.TextEntry{}
-		for i := 0; i < size; i++ {
-			if r.r.Headers(&obj, i) {
-				hh.Add(string(obj.Name()), string(obj.Value()))
-			}
-		}
-		r.hdr = hdr
-		r.rawHdr = hdr.Clone()
+		r.hdr = newHeader(r.r)
 	}
+
 	return r.hdr
 }
 
@@ -214,38 +202,7 @@ func (r *Response) FetchChanges(builder *flatbuffers.Builder) bool {
 
 	var hdrVec flatbuffers.UOffsetT
 	if r.hdr != nil {
-		hdrs := []flatbuffers.UOffsetT{}
-		oldHdr := r.rawHdr
-		newHdr := r.hdr.View()
-		for n := range oldHdr {
-			if _, ok := newHdr[n]; !ok {
-				// deleted
-				name := builder.CreateString(n)
-				A6.TextEntryStart(builder)
-				A6.TextEntryAddName(builder, name)
-				te := A6.TextEntryEnd(builder)
-				hdrs = append(hdrs, te)
-			}
-		}
-		for n, v := range newHdr {
-			if raw, ok := oldHdr[n]; !ok || raw[0] != v[0] {
-				// set
-				name := builder.CreateString(n)
-				value := builder.CreateString(v[0])
-				A6.TextEntryStart(builder)
-				A6.TextEntryAddName(builder, name)
-				A6.TextEntryAddValue(builder, value)
-				te := A6.TextEntryEnd(builder)
-				hdrs = append(hdrs, te)
-			}
-		}
-		size := len(hdrs)
-		hrc.RespStartHeadersVector(builder, size)
-		for i := size - 1; i >= 0; i-- {
-			te := hdrs[i]
-			builder.PrependUOffsetT(te)
-		}
-		hdrVec = builder.EndVector(size)
+		hdrVec = r.hdr.Build(builder)
 	}
 
 	var bodyVec flatbuffers.UOffsetT

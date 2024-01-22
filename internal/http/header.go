@@ -17,18 +17,103 @@
 
 package http
 
-import "net/http"
+import (
+	"net/http"
 
-type Header struct {
-	http.Header
+	"github.com/api7/ext-plugin-proto/go/A6"
+	hrc "github.com/api7/ext-plugin-proto/go/A6/HTTPReqCall"
+	flatbuffers "github.com/google/flatbuffers/go"
+)
+
+type ReadHeader interface {
+	HeadersLength() int
+	Headers(*A6.TextEntry, int) bool
 }
 
-func newHeader() *Header {
+type Header struct {
+	hdr    http.Header
+	rawHdr http.Header
+
+	deleteField map[string]struct{}
+}
+
+func newHeader(r ReadHeader) *Header {
+	hh := http.Header{}
+	size := r.HeadersLength()
+	obj := A6.TextEntry{}
+	for i := 0; i < size; i++ {
+		if r.Headers(&obj, i) {
+			hh.Add(string(obj.Name()), string(obj.Value()))
+		}
+	}
+
 	return &Header{
-		Header: http.Header{},
+		hdr:    http.Header{},
+		rawHdr: hh,
+
+		deleteField: make(map[string]struct{}),
 	}
 }
 
+func (h *Header) Set(key, value string) {
+	h.hdr.Set(key, value)
+	delete(h.deleteField, key)
+}
+
+func (h *Header) Del(key string) {
+	if h.rawHdr.Get(key) != "" {
+		h.deleteField[key] = struct{}{}
+		h.rawHdr.Del(key)
+	}
+
+	h.hdr.Del(key)
+}
+
+func (h *Header) Get(key string) string {
+	if v := h.hdr.Get(key); v != "" {
+		return v
+	}
+
+	return h.rawHdr.Get(key)
+}
+
+// View
+// Deprecated: refactoring
 func (h *Header) View() http.Header {
-	return h.Header
+	return h.hdr
+}
+
+func (h *Header) Build(builder *flatbuffers.Builder) flatbuffers.UOffsetT {
+	var hdrs []flatbuffers.UOffsetT
+
+	// deleted
+	for d := range h.deleteField {
+		name := builder.CreateString(d)
+		A6.TextEntryStart(builder)
+		A6.TextEntryAddName(builder, name)
+		te := A6.TextEntryEnd(builder)
+		hdrs = append(hdrs, te)
+	}
+
+	// set
+	for hKey, hVal := range h.hdr {
+		if raw, ok := h.rawHdr[hKey]; !ok || raw[0] != hVal[0] {
+			name := builder.CreateString(hKey)
+			value := builder.CreateString(hVal[0])
+			A6.TextEntryStart(builder)
+			A6.TextEntryAddName(builder, name)
+			A6.TextEntryAddValue(builder, value)
+			te := A6.TextEntryEnd(builder)
+			hdrs = append(hdrs, te)
+		}
+	}
+
+	size := len(hdrs)
+	hrc.RewriteStartHeadersVector(builder, size)
+	for i := size - 1; i >= 0; i-- {
+		te := hdrs[i]
+		builder.PrependUOffsetT(te)
+	}
+
+	return builder.EndVector(size)
 }
