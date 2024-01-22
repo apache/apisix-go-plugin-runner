@@ -215,7 +215,16 @@ func (r *Request) FetchChanges(id uint32, builder *flatbuffers.Builder) bool {
 
 	var hdrVec, respHdrVec flatbuffers.UOffsetT
 	if r.hdr != nil {
-		hdrVec = r.hdr.Build(builder)
+		hdrs := HeaderBuild(r.hdr, builder)
+
+		size := len(hdrs)
+		hrc.RewriteStartHeadersVector(builder, size)
+		for i := size - 1; i >= 0; i-- {
+			te := hdrs[i]
+			builder.PrependUOffsetT(te)
+		}
+
+		hdrVec = builder.EndVector(size)
 	}
 
 	if r.respHdr != nil {
