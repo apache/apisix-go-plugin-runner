@@ -21,7 +21,6 @@ import (
 	"net/http"
 
 	"github.com/api7/ext-plugin-proto/go/A6"
-	hrc "github.com/api7/ext-plugin-proto/go/A6/HTTPReqCall"
 	flatbuffers "github.com/google/flatbuffers/go"
 )
 
@@ -83,7 +82,7 @@ func (h *Header) View() http.Header {
 	return h.hdr
 }
 
-func (h *Header) Build(builder *flatbuffers.Builder) flatbuffers.UOffsetT {
+func HeaderBuild(h *Header, builder *flatbuffers.Builder) []flatbuffers.UOffsetT {
 	var hdrs []flatbuffers.UOffsetT
 
 	// deleted
@@ -108,12 +107,5 @@ func (h *Header) Build(builder *flatbuffers.Builder) flatbuffers.UOffsetT {
 		}
 	}
 
-	size := len(hdrs)
-	hrc.RewriteStartHeadersVector(builder, size)
-	for i := size - 1; i >= 0; i-- {
-		te := hdrs[i]
-		builder.PrependUOffsetT(te)
-	}
-
-	return builder.EndVector(size)
+	return hdrs
 }
